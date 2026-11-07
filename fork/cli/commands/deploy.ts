@@ -331,9 +331,25 @@ async function checks(
       `Fork footprint check failed:\n${problems.map((row) => `  ${row.file}: ${row.problem}`).join("\n")}`,
     );
   }
+  const changed = git(src, ["diff", "--name-only", base, "HEAD"])
+    .stdout.split("\n")
+    .filter(Boolean);
   if (full) {
     runStep("typecheck everything (vp run typecheck)", VP_BIN, ["run", "typecheck"], { cwd: src });
     runStep("run every test (vp run test)", VP_BIN, ["run", "test"], { cwd: src });
+  } else if (changed.every((file) => file.startsWith("fork/"))) {
+    // Fork tooling is in no upstream package; upstream's check would typecheck all 40 packages for it.
+    log(
+      `only fork/ changed since ${base.slice(0, 8)} (${changed.length} file(s)); running the fork's own checks`,
+    );
+    runStep(
+      "typecheck fork tooling",
+      NodePath.join(src, "node_modules/.bin/tsc"),
+      ["-p", "fork/tsconfig.json"],
+      { cwd: src },
+    );
+    runStep("lint fork tooling", VP_BIN, ["lint", "fork/"], { cwd: src });
+    runStep("format check fork tooling", VP_BIN, ["fmt", "--check", "fork/"], { cwd: src });
   } else {
     runStep(
       `checks for changes since ${base.slice(0, 8)} (vp run check:changed)`,
