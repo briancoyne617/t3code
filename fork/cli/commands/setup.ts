@@ -47,13 +47,23 @@ export async function setup(cfg: ForkConfig): Promise<void> {
     log(`dev worktree exists: ${cfg.devWorktree}`);
   }
 
-  // Environment for the service: the PATH your interactive shell has, so provider CLIs resolve.
-  const shellPath =
-    capture("bash", ["-ic", 'printf "__PATH__%s" "$PATH"'], { allowFail: true })
-      .stdout.split("__PATH__")
-      .pop() ||
-    process.env.PATH ||
-    "";
+  // The PATH a fresh login shell gets (not this process's), so provider CLIs resolve like in your terminal.
+  const fresh = capture(
+    "env",
+    [
+      "-i",
+      `HOME=${HOME}`,
+      `USER=${process.env.USER ?? ""}`,
+      "TERM=dumb",
+      "bash",
+      "-lic",
+      'printf "__PATH__%s" "$PATH"',
+    ],
+    { allowFail: true },
+  ).stdout.split("__PATH__")[1];
+  const shellPath = [...new Set((fresh || process.env.PATH || "").split(":").filter(Boolean))].join(
+    ":",
+  );
   const envText = [`PATH=${shellPath}`, "LANG=C.UTF-8", ""].join("\n");
   if (!NodeFS.existsSync(P.stableEnv) || NodeFS.readFileSync(P.stableEnv, "utf8") !== envText) {
     act(`write ${P.stableEnv} (PATH for the stable server and its agents)`, () =>
