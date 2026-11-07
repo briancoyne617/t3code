@@ -39,6 +39,8 @@ export interface ForkConfig {
   idleQuietSeconds: number;
   idleTimeoutMinutes: number;
   healthTimeoutSeconds: number;
+  /** Parallel typecheck/test jobs in promote checks; this machine has ~8 GB, so keep it low. */
+  checkConcurrency: number;
 }
 
 export const DEFAULT_CONFIG: ForkConfig = {
@@ -57,6 +59,7 @@ export const DEFAULT_CONFIG: ForkConfig = {
   idleQuietSeconds: 30,
   idleTimeoutMinutes: 30,
   healthTimeoutSeconds: 240,
+  checkConcurrency: 2,
 };
 
 export class ForkError extends Error {}

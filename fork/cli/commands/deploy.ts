@@ -205,7 +205,7 @@ export async function promote(cfg: ForkConfig, options: PromoteOptions): Promise
           `[dry-run] would check fork hooks + footprint, then run vp run ${options.fullTests ? "typecheck + test" : `check:changed ${checkBase.slice(0, 8)}`}`,
         );
       } else {
-        await checks(releaseSrc, checkBase, options.fullTests);
+        await checks(releaseSrc, checkBase, options.fullTests, cfg.checkConcurrency);
       }
       stampVersion(dir);
       buildRelease(dir);
@@ -312,7 +312,12 @@ export async function promote(cfg: ForkConfig, options: PromoteOptions): Promise
   }
 }
 
-async function checks(src: string, base: string, full: boolean): Promise<void> {
+async function checks(
+  src: string,
+  base: string,
+  full: boolean,
+  concurrency: number,
+): Promise<void> {
   log("checking fork hooks and footprint");
   const hooks = await applyHooks(src, { write: false });
   const stale = hooks.filter((hook) => hook.changed);
@@ -326,14 +331,30 @@ async function checks(src: string, base: string, full: boolean): Promise<void> {
       `Fork footprint check failed:\n${problems.map((row) => `  ${row.file}: ${row.problem}`).join("\n")}`,
     );
   }
+  const changed = git(src, ["diff", "--name-only", base, "HEAD"])
+    .stdout.split("\n")
+    .filter(Boolean);
   if (full) {
     runStep("typecheck everything (vp run typecheck)", VP_BIN, ["run", "typecheck"], { cwd: src });
     runStep("run every test (vp run test)", VP_BIN, ["run", "test"], { cwd: src });
+  } else if (changed.every((file) => file.startsWith("fork/"))) {
+    // Fork tooling is in no upstream package; upstream's check would typecheck all 40 packages for it.
+    log(
+      `only fork/ changed since ${base.slice(0, 8)} (${changed.length} file(s)); running the fork's own checks`,
+    );
+    runStep(
+      "typecheck fork tooling",
+      NodePath.join(src, "node_modules/.bin/tsc"),
+      ["-p", "fork/tsconfig.json"],
+      { cwd: src },
+    );
+    runStep("lint fork tooling", VP_BIN, ["lint", "fork/"], { cwd: src });
+    runStep("format check fork tooling", VP_BIN, ["fmt", "--check", "fork/"], { cwd: src });
   } else {
     runStep(
       `checks for changes since ${base.slice(0, 8)} (vp run check:changed)`,
       VP_BIN,
-      ["run", "check:changed", base],
+      ["run", "check:changed", base, "--concurrency", String(concurrency)],
       { cwd: src },
     );
   }
