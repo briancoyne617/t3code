@@ -190,14 +190,15 @@ export async function promote(cfg: ForkConfig, options: PromoteOptions): Promise
 
     // 2. Build and check.
     buildRelease(dir);
+    const checkBase = deployedServer?.sha ?? upstreamBase(repo, "custom");
     if (options.skipTests) {
       warn("skipping tests (--skip-tests)");
-    } else {
-      await checks(
-        releaseSrc,
-        deployedServer?.sha ?? upstreamBaseOf(releaseSrc),
-        options.fullTests,
+    } else if (DRY_RUN) {
+      log(
+        `[dry-run] would check fork hooks + footprint, then run vp run ${options.fullTests ? "typecheck + test" : `check:changed ${checkBase.slice(0, 8)}`}`,
       );
+    } else {
+      await checks(releaseSrc, checkBase, options.fullTests);
     }
     let manifest: Manifest | undefined;
     act("seal the release (own Node binary, UI copy, live-swappable client link)", () => {
@@ -296,10 +297,6 @@ export async function promote(cfg: ForkConfig, options: PromoteOptions): Promise
   } finally {
     if (!handedOff) releaseLock(lock);
   }
-}
-
-function upstreamBaseOf(src: string): string {
-  return upstreamBase(src);
 }
 
 async function checks(src: string, base: string, full: boolean): Promise<void> {
