@@ -114,8 +114,11 @@ export async function promote(cfg: ForkConfig, options: PromoteOptions): Promise
     const repo = cfg.repo;
     if (currentBranch(repo) !== "custom")
       throw new ForkError(`${repo} must have \`custom\` checked out`);
-    if (!isClean(repo))
-      throw new ForkError(`${repo} has uncommitted changes; commit or stash them first`);
+    if (!isClean(repo)) {
+      if (!DRY_RUN)
+        throw new ForkError(`${repo} has uncommitted changes; commit or stash them first`);
+      warn(`${repo} has uncommitted changes; a real promote would refuse to run`);
+    }
 
     let feature: string | undefined;
     if (!options.noMerge) {
