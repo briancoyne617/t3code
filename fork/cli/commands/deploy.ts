@@ -191,27 +191,33 @@ export async function promote(cfg: ForkConfig, options: PromoteOptions): Promise
     act(`name the release ${id}`, () => NodeFS.renameSync(building, dir));
     const releaseSrc = NodePath.join(dir, "src");
 
-    // 2. Build and check.
-    buildRelease(dir);
-    const checkBase = deployedServer?.sha ?? upstreamBase(repo, "custom");
-    if (options.skipTests) {
-      warn("skipping tests (--skip-tests)");
-    } else if (DRY_RUN) {
-      log(
-        `[dry-run] would check fork hooks + footprint, then run vp run ${options.fullTests ? "typecheck + test" : `check:changed ${checkBase.slice(0, 8)}`}`,
-      );
-    } else {
-      await checks(releaseSrc, checkBase, options.fullTests);
-    }
+    // 2. Build and check. A failed build or check removes its half-made release.
     let manifest: Manifest | undefined;
-    act("seal the release (own Node binary, UI copy, live-swappable client link)", () => {
-      manifest = sealRelease(dir, {
-        sha,
-        branch: feature ?? "custom",
-        tests: options.skipTests ? "skipped" : options.fullTests ? "full" : "changed",
-        carryFrom: readPointer(P.clientCurrent),
+    try {
+      buildRelease(dir);
+      const checkBase = deployedServer?.sha ?? upstreamBase(repo, "custom");
+      if (options.skipTests) {
+        warn("skipping tests (--skip-tests)");
+      } else if (DRY_RUN) {
+        log(
+          `[dry-run] would check fork hooks + footprint, then run vp run ${options.fullTests ? "typecheck + test" : `check:changed ${checkBase.slice(0, 8)}`}`,
+        );
+      } else {
+        await checks(releaseSrc, checkBase, options.fullTests);
+      }
+      act("seal the release (own Node binary, UI copy, live-swappable client link)", () => {
+        manifest = sealRelease(dir, {
+          sha,
+          branch: feature ?? "custom",
+          tests: options.skipTests ? "skipped" : options.fullTests ? "full" : "changed",
+          carryFrom: readPointer(P.clientCurrent),
+        });
       });
-    });
+    } catch (error) {
+      if (!DRY_RUN) NodeFS.rmSync(dir, { recursive: true, force: true });
+      log(`removed the failed release ${id}`);
+      throw error;
+    }
 
     // 3. What changed? Decided from build outputs, not file names.
     const serverChanged =

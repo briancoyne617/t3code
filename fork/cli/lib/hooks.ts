@@ -25,6 +25,7 @@ const AGENTS_BEGIN = "<!-- t3-fork:begin -->";
 const AGENTS_END = "<!-- t3-fork:end -->";
 const AGENTS_BLOCK = [
   AGENTS_BEGIN,
+  "",
   "## Personal fork",
   "",
   "This checkout belongs to a personal fork with a live stable instance. Read [fork/AGENTS.md](fork/AGENTS.md) before starting servers, touching T3 homes, or editing upstream files.",
