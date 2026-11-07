@@ -1,6 +1,6 @@
 {
   "AGENTS.md": 7,
-  "apps/server/src/cli/server.ts": 2,
+  "apps/server/src/cli/server.ts": 4,
   "apps/web/src/components/sidebar/SidebarChrome.tsx": 2,
   "t3.json": 26
 }
