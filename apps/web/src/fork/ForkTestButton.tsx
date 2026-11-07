@@ -6,7 +6,7 @@ export function ForkTestButton() {
     <Button
       variant="ghost"
       size="compact"
-      onClick={() => toastManager.add({ type: "info", title: "Hello from your fork" })}
+      onClick={() => toastManager.add({ type: "info", title: "Hello from your fork (v2)" })}
     >
       Fork test
     </Button>
