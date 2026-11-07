@@ -183,13 +183,23 @@ export async function dev(cfg: ForkConfig, extraArgs: ReadonlyArray<string>): Pr
       T3CODE_THREAD_ID: undefined,
     }),
     stdio: ["inherit", "pipe", "pipe"],
+    // Own process group: upstream's dev runner does not pass signals down its chain, so stop the whole group.
+    detached: true,
   });
   const rewrite = (chunk: Buffer) =>
     chunk.toString().replace(/http:\/\/localhost:(\d+)/g, "http://127.0.0.1:$1");
   child.stdout.on("data", (chunk: Buffer) => process.stdout.write(rewrite(chunk)));
   child.stderr.on("data", (chunk: Buffer) => process.stderr.write(rewrite(chunk)));
+  const stopGroup = (signal: NodeJS.Signals) => {
+    try {
+      if (child.pid) process.kill(-child.pid, signal);
+    } catch {
+      // already gone
+    }
+  };
   for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const)
-    process.on(signal, () => child.kill(signal));
+    process.on(signal, () => stopGroup("SIGINT"));
+  process.on("exit", () => stopGroup("SIGTERM"));
   await new Promise<void>((resolve) =>
     child.on("exit", (code) => {
       process.exitCode = code ?? 1;
