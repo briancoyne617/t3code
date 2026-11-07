@@ -606,6 +606,8 @@ export async function swap(cfg: ForkConfig, planFile: string): Promise<void> {
 
 export interface RollbackOptions {
   yes: boolean;
+  force: boolean;
+  timeoutMinutes?: number;
   restoreDb?: boolean;
 }
 
@@ -687,6 +689,16 @@ export async function rollback(cfg: ForkConfig, options: RollbackOptions): Promi
       );
       restore = false;
     }
+    if (stableRunning(cfg) && !options.force && !DRY_RUN) {
+      const idle = await waitForIdle(cfg, {
+        timeoutMinutes: options.timeoutMinutes ?? cfg.idleTimeoutMinutes,
+        quietSeconds: cfg.idleQuietSeconds,
+      });
+      if (!idle)
+        throw new ForkError(
+          "stable still has running turns; try again later or pass --force (restart continuation resumes cut turns)",
+        );
+    }
     const plan: SwapPlan = {
       token: lock.token,
       mode: "rollback",
@@ -695,7 +707,7 @@ export async function rollback(cfg: ForkConfig, options: RollbackOptions): Promi
       fromServer: state.server?.release,
       fromClient: state.client?.release,
       sha: readManifest(target)?.sha ?? "",
-      force: true,
+      force: options.force,
       takeSnapshot: true,
       ...(restore && last.snapshot ? { restoreSnapshot: last.snapshot } : {}),
       log: currentLog() ?? NodePath.join(P.logs, `${timestamp()}-rollback.log`),

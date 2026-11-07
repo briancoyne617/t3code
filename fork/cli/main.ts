@@ -22,7 +22,7 @@ const HELP = `fork — tooling for the personal T3 Code fork (docs: fork/README.
         --force                      restart even if stable has running turns (restart continuation resumes them)
         --timeout <minutes>          how long to wait for stable to go idle (default 30)
         --skip-tests | --full-tests  skip checks, or run the whole suite instead of checks for changed files
-  fork rollback [--yes] [--restore-db | --keep-db]
+  fork rollback [--yes] [--force] [--restore-db | --keep-db]
                                      go back to the release before the current one
   fork sync-upstream [--to main|<tag>] [--continue <dir>] [--skip-tests]
                                      merge the latest upstream stable tag (or main) into custom; never deploys
@@ -92,6 +92,8 @@ async function main(argv: string[]): Promise<void> {
       log(`log: ${startLog("rollback")}${DRY_RUN ? " (dry run)" : ""}`);
       return rollback(cfg, {
         yes: values.yes,
+        force: values.force,
+        ...(values.timeout ? { timeoutMinutes: Number(values.timeout) } : {}),
         ...(values["restore-db"]
           ? { restoreDb: true }
           : values["keep-db"]
