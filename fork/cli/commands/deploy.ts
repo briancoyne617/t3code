@@ -30,6 +30,8 @@ import {
 import { applyHooks, footprint } from "../lib/hooks.ts";
 import {
   buildRelease,
+  installRelease,
+  stampVersion,
   currentBranch,
   git,
   isAncestor,
@@ -194,7 +196,7 @@ export async function promote(cfg: ForkConfig, options: PromoteOptions): Promise
     // 2. Build and check. A failed build or check removes its half-made release.
     let manifest: Manifest | undefined;
     try {
-      buildRelease(dir);
+      installRelease(dir);
       const checkBase = deployedServer?.sha ?? upstreamBase(repo, "custom");
       if (options.skipTests) {
         warn("skipping tests (--skip-tests)");
@@ -205,6 +207,8 @@ export async function promote(cfg: ForkConfig, options: PromoteOptions): Promise
       } else {
         await checks(releaseSrc, checkBase, options.fullTests);
       }
+      stampVersion(dir);
+      buildRelease(dir);
       act("seal the release (own Node binary, UI copy, live-swappable client link)", () => {
         manifest = sealRelease(dir, {
           sha,
@@ -455,7 +459,8 @@ async function launchSwap(cfg: ForkConfig, plan: SwapPlan): Promise<boolean | un
 export async function swap(cfg: ForkConfig, planFile: string): Promise<void> {
   const plan = readJson<SwapPlan>(planFile);
   if (!plan) throw new ForkError(`Plan ${planFile} is unreadable`);
-  useLog(plan.log);
+  // stdout of this unit already goes to the log file, so do not write each line twice.
+  useLog(plan.log, { console: false });
   let lock: Lock | undefined;
   let result = "failed";
   try {

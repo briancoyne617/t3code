@@ -107,11 +107,45 @@ export function newReleaseId(sha: string): string {
 }
 
 /** Install and build a release from a prepared clone (`<release>/src`). */
+export function installRelease(dir: string): void {
+  runStep("install dependencies (vp i --frozen-lockfile)", VP_BIN, ["i", "--frozen-lockfile"], {
+    cwd: NodePath.join(dir, "src"),
+  });
+}
+
+/**
+ * Upstream's release workflow writes the real version into package.json at build time; the tagged
+ * source still says the previous one. Do the same so the server reports its upstream base (e.g. 0.1.7).
+ */
+export function stampVersion(dir: string): string | undefined {
+  const src = NodePath.join(dir, "src");
+  const tag = git(
+    src,
+    [
+      "describe",
+      "--tags",
+      "--abbrev=0",
+      "--match",
+      "v[0-9]*.[0-9]*.[0-9]*",
+      "--exclude",
+      "*-*",
+      "HEAD",
+    ],
+    true,
+  ).stdout;
+  if (!/^v\d+\.\d+\.\d+$/.test(tag)) return undefined;
+  const version = tag.slice(1);
+  runStep(
+    `stamp version ${version} (upstream base ${tag})`,
+    NODE_BIN,
+    ["scripts/update-release-package-versions.ts", version],
+    { cwd: src },
+  );
+  return version;
+}
+
 export function buildRelease(dir: string): void {
   const src = NodePath.join(dir, "src");
-  runStep("install dependencies (vp i --frozen-lockfile)", VP_BIN, ["i", "--frozen-lockfile"], {
-    cwd: src,
-  });
   runStep(
     "build web + server (vp run --filter t3 build)",
     VP_BIN,

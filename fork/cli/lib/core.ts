@@ -93,8 +93,11 @@ export function startLog(command: string): string {
   return logFile;
 }
 
-export function useLog(file: string): void {
+let toConsole = true;
+
+export function useLog(file: string, options: { console?: boolean } = {}): void {
   logFile = file;
+  toConsole = options.console ?? true;
 }
 
 export function currentLog(): string | undefined {
@@ -103,7 +106,7 @@ export function currentLog(): string | undefined {
 
 export function log(message: string): void {
   const line = `[fork ${new Date().toISOString().slice(11, 19)}] ${message}`;
-  console.log(line);
+  if (toConsole || !logFile) console.log(line);
   if (logFile) NodeFS.appendFileSync(logFile, `${line}\n`);
 }
 
