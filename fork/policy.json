@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "organization": "Personal fork",
+  "limits": {
+    "updates": { "mode": "off" }
+  }
+}

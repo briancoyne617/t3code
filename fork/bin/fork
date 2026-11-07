@@ -1,0 +1,20 @@
+#!/bin/sh
+# Launcher for the fork CLI (fork/cli/main.ts).
+# It runs the copy in the stable `custom` checkout (from ~/.t3-fork/config.json), so a button in the dev
+# worktree never runs half-edited tooling. Set T3_FORK_LOCAL_TOOLING=1 to run this checkout's copy instead.
+set -e
+ROOT="${T3_FORK_ROOT:-$HOME/.t3-fork}"
+HERE=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
+REPO=""
+if [ -z "$T3_FORK_LOCAL_TOOLING" ] && [ -f "$ROOT/config.json" ]; then
+  REPO=$(sed -n 's/^ *"repo": *"\([^"]*\)".*/\1/p' "$ROOT/config.json" | head -n 1)
+fi
+if [ -z "$REPO" ] || [ ! -f "$REPO/fork/cli/main.ts" ]; then REPO="$HERE"; fi
+VERSION=$(sed -n 's/^ *"node": *"\([0-9][0-9.]*\)".*/\1/p' "$REPO/package.json" | head -n 1)
+VP="$HOME/.local/share/vite-plus/bin/vp"
+NODE="$HOME/.local/share/vite-plus/js_runtime/node/$VERSION/bin/node"
+if [ ! -x "$NODE" ]; then
+  echo "[fork] installing Node $VERSION with vp" >&2
+  "$VP" env install "$VERSION" >&2
+fi
+exec "$NODE" --disable-warning=ExperimentalWarning "$REPO/fork/cli/main.ts" "$@"

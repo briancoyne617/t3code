@@ -210,3 +210,10 @@ Architecture and its constraints: `docs/internals/overview.md`. Glossary: `docs/
 ## Additional tips
 
 - Security is important, but should not be over-indexed on, especially for dev mode/maintainer-only features.
+
+<!-- t3-fork:begin -->
+
+## Personal fork
+
+This checkout belongs to a personal fork with a live stable instance. Read [fork/AGENTS.md](fork/AGENTS.md) before starting servers, touching T3 homes, or editing upstream files.
+<!-- t3-fork:end -->

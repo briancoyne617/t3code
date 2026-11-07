@@ -1,0 +1,30 @@
+{
+  "scripts": [
+    {
+      "name": "Dev",
+      "command": "./fork/bin/fork dev",
+      "icon": "play",
+      "previewUrl": "http://127.0.0.1:5833"
+    },
+    {
+      "name": "Fork: Promote",
+      "command": "./fork/bin/fork promote",
+      "icon": "build"
+    },
+    {
+      "name": "Fork: Rollback",
+      "command": "./fork/bin/fork rollback",
+      "icon": "debug"
+    },
+    {
+      "name": "Fork: Sync upstream",
+      "command": "./fork/bin/fork sync-upstream",
+      "icon": "configure"
+    },
+    {
+      "name": "Fork: Status",
+      "command": "./fork/bin/fork status --fetch",
+      "icon": "test"
+    }
+  ]
+}
