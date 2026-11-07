@@ -205,7 +205,7 @@ export async function promote(cfg: ForkConfig, options: PromoteOptions): Promise
           `[dry-run] would check fork hooks + footprint, then run vp run ${options.fullTests ? "typecheck + test" : `check:changed ${checkBase.slice(0, 8)}`}`,
         );
       } else {
-        await checks(releaseSrc, checkBase, options.fullTests);
+        await checks(releaseSrc, checkBase, options.fullTests, cfg.checkConcurrency);
       }
       stampVersion(dir);
       buildRelease(dir);
@@ -312,7 +312,12 @@ export async function promote(cfg: ForkConfig, options: PromoteOptions): Promise
   }
 }
 
-async function checks(src: string, base: string, full: boolean): Promise<void> {
+async function checks(
+  src: string,
+  base: string,
+  full: boolean,
+  concurrency: number,
+): Promise<void> {
   log("checking fork hooks and footprint");
   const hooks = await applyHooks(src, { write: false });
   const stale = hooks.filter((hook) => hook.changed);
@@ -333,7 +338,7 @@ async function checks(src: string, base: string, full: boolean): Promise<void> {
     runStep(
       `checks for changes since ${base.slice(0, 8)} (vp run check:changed)`,
       VP_BIN,
-      ["run", "check:changed", base],
+      ["run", "check:changed", base, "--concurrency", String(concurrency)],
       { cwd: src },
     );
   }
