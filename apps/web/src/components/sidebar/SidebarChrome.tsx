@@ -24,6 +24,7 @@ import {
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { ForkTodos } from "../../fork/ForkTodos";
+import { ForkHeaderTools } from "../../fork/ForkHeaderTools";
 import {
   SidebarFooter,
   SidebarMenu,
@@ -75,6 +76,7 @@ export const SidebarChromeHeader = memo(function SidebarChromeHeader({
       <div className="relative z-10 flex h-8 min-w-0 flex-1 flex-wrap content-start items-center gap-x-2 overflow-hidden py-0.5">
         <div className="flex shrink-0 items-center gap-1">
           <SidebarBrand onBackdrop={backdropVariant !== null} />
+          <ForkHeaderTools />
           {isElectron ? (
             <div className="hidden items-center md:flex">
               <HistoryNavigationButton direction="back" onBackdrop={backdropVariant !== null} />
