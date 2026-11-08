@@ -45,16 +45,20 @@ export function applyComposerEffortKeyword(
       descriptor.options.some((option) => option.id === match.keyword),
   );
   if (!offered) return { prompt, modelSelection, promptEffort };
-  const effort = { id: "effort", value: match.keyword };
-  const options = modelSelection.options ?? [];
   return {
     prompt: prompt.slice(match.length),
-    modelSelection: {
-      ...modelSelection,
-      options: options.some((option) => option.id === "effort")
-        ? options.map((option) => (option.id === "effort" ? effort : option))
-        : [...options, effort],
-    },
+    modelSelection: withEffortOption(modelSelection, match.keyword),
     promptEffort: match.keyword,
+  };
+}
+
+export function withEffortOption(modelSelection: ModelSelection, value: string): ModelSelection {
+  const effort = { id: "effort", value };
+  const options = modelSelection.options ?? [];
+  return {
+    ...modelSelection,
+    options: options.some((option) => option.id === "effort")
+      ? options.map((option) => (option.id === "effort" ? effort : option))
+      : [...options, effort],
   };
 }

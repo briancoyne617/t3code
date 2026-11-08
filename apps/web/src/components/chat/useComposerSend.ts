@@ -58,6 +58,7 @@ import {
   parseStandaloneComposerSlashCommand,
 } from "../../composer-logic";
 import { applyComposerEffortKeyword } from "../../composerEffortKeyword";
+import { pinComposerEffortDial } from "../../composerEffortKeywordDial";
 import { resolvePlanFollowUpSubmission } from "../../proposedPlan";
 import { type ChatMessage } from "../../types";
 import { recordPromptSent } from "../GitHubStarPrompt";
@@ -607,6 +608,9 @@ export function useComposerSend(input: ComposerSendInput) {
       models: ctxSelectedProviderModels,
       planModeEnabled,
     });
+    if (sendPrompt !== promptRef.current) {
+      pinComposerEffortDial(composerDraftTarget, ctxDialModelSelection, ctxDialPromptEffort);
+    }
     const { images: composerImages, previewAnnotations: composerPreviewAnnotations } =
       mergeDirectPreviewAnnotation({
         images: sendContextImages,
