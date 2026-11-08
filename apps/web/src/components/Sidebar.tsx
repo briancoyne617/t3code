@@ -1,4 +1,5 @@
 import { liveShellEnvironmentIdsAtom } from "../state/shell";
+import { ForkUsageBar } from "../fork/ForkUsageBar";
 import { attachSidebarTree } from "../lib/sidebarTree";
 import { type EnvironmentId, type ScopedProjectRef } from "@t3tools/contracts";
 import type { EnvironmentServerConfig } from "@t3tools/client-runtime/connection";
@@ -2986,6 +2987,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
     <>
       <ThreadContextDragGhost />
       <SidebarChromeHeader isElectron={isElectron} />
+      <ForkUsageBar />
       <SidebarContent
         ref={sidebarContentRef}
         className="min-h-full"

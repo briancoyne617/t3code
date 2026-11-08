@@ -228,7 +228,15 @@ export function runStep(
     fd = NodeFS.openSync(logFile, "a");
     spawnOptions.stdio = ["ignore", fd, fd];
   }
-  const result = NodeChildProcess.spawnSync(cmd, args, spawnOptions);
+  // Builds and checks run at the lowest CPU/IO priority so they never starve the stable server's agents.
+  const lowPriority = process.platform === "linux";
+  const result = lowPriority
+    ? NodeChildProcess.spawnSync(
+        "nice",
+        ["-n", "19", "ionice", "-c", "3", cmd, ...args],
+        spawnOptions,
+      )
+    : NodeChildProcess.spawnSync(cmd, args, spawnOptions);
   if (fd !== undefined) NodeFS.closeSync(fd);
   const code = result.status ?? 1;
   const seconds = Math.round((Date.now() - started) / 1000);
