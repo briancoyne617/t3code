@@ -58,6 +58,7 @@ import {
   pastedPathQueryLength,
 } from "~/composer-logic";
 import { useStableCallback } from "~/hooks/useStableCallback";
+import { ComposerEffortKeywordExtension } from "./ComposerEffortKeywordExtension";
 import { caretLineDirection, ComposerTextDirectionExtension } from "~/composer-text-direction";
 import {
   collectComposerPromptInlineTokens,
@@ -843,6 +844,7 @@ function createComposerExtensions(richText: boolean) {
     ComposerCitationExtension,
     ComposerContextReferenceExtension,
     ComposerMarkersExtension,
+    ComposerEffortKeywordExtension,
     ...(richText
       ? [
           ComposerBoldSelectionOnlyExtension,

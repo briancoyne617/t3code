@@ -57,6 +57,8 @@ import {
   parseSideChatCommand,
   parseStandaloneComposerSlashCommand,
 } from "../../composer-logic";
+import { applyComposerEffortKeyword } from "../../composerEffortKeyword";
+import { pinComposerEffortDial } from "../../composerEffortKeywordDial";
 import { resolvePlanFollowUpSubmission } from "../../proposedPlan";
 import { type ChatMessage } from "../../types";
 import { recordPromptSent } from "../GitHubStarPrompt";
@@ -588,11 +590,27 @@ export function useComposerSend(input: ComposerSendInput) {
       selectedProvider: ctxSelectedProvider,
       selectedModel: ctxSelectedModel,
       selectedProviderModels: ctxSelectedProviderModels,
-      selectedPromptEffort: ctxSelectedPromptEffort,
-      selectedModelSelection: ctxSelectedModelSelection,
+      selectedPromptEffort: ctxDialPromptEffort,
+      selectedModelSelection: ctxDialModelSelection,
       interactionMode: sendInteractionMode,
       interactionModeEnabled: sendInteractionModeEnabled,
     } = sendCtx;
+    const {
+      prompt: sendPrompt,
+      promptEffort: ctxSelectedPromptEffort,
+      modelSelection: ctxSelectedModelSelection,
+    } = applyComposerEffortKeyword({
+      prompt: promptRef.current,
+      modelSelection: ctxDialModelSelection,
+      promptEffort: ctxDialPromptEffort,
+      provider: ctxSelectedProvider,
+      model: ctxSelectedModel,
+      models: ctxSelectedProviderModels,
+      planModeEnabled,
+    });
+    if (sendPrompt !== promptRef.current) {
+      pinComposerEffortDial(composerDraftTarget, ctxDialModelSelection, ctxDialPromptEffort);
+    }
     const { images: composerImages, previewAnnotations: composerPreviewAnnotations } =
       mergeDirectPreviewAnnotation({
         images: sendContextImages,
@@ -603,10 +621,10 @@ export function useComposerSend(input: ComposerSendInput) {
     // A direct "send annotation" writes the draft and sends in the same tick; the reference
     // must be in the text now, not after the next render.
     const promptForSend = directAnnotation
-      ? ensureInlineContextReferences(promptRef.current, [
+      ? ensureInlineContextReferences(sendPrompt, [
           previewAnnotationContextReference(directAnnotation.annotation),
         ])
-      : promptRef.current;
+      : sendPrompt;
     const strandedThread = threadContextsOutsideEnvironment({
       text: promptForSend,
       records: composerThreadContexts,
