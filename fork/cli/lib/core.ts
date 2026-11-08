@@ -21,6 +21,7 @@ export const P = {
   work: NodePath.join(FORK_ROOT, "work"),
   plans: NodePath.join(FORK_ROOT, "plans"),
   stableEnv: NodePath.join(FORK_ROOT, "stable.env"),
+  pending: NodePath.join(FORK_ROOT, "pending.json"),
 };
 
 export interface ForkConfig {
@@ -228,7 +229,15 @@ export function runStep(
     fd = NodeFS.openSync(logFile, "a");
     spawnOptions.stdio = ["ignore", fd, fd];
   }
-  const result = NodeChildProcess.spawnSync(cmd, args, spawnOptions);
+  // Builds and checks run at the lowest CPU/IO priority so they never starve the stable server's agents.
+  const lowPriority = NodeFS.existsSync("/usr/bin/ionice") && NodeFS.existsSync("/usr/bin/nice");
+  const result = lowPriority
+    ? NodeChildProcess.spawnSync(
+        "nice",
+        ["-n", "19", "ionice", "-c", "3", cmd, ...args],
+        spawnOptions,
+      )
+    : NodeChildProcess.spawnSync(cmd, args, spawnOptions);
   if (fd !== undefined) NodeFS.closeSync(fd);
   const code = result.status ?? 1;
   const seconds = Math.round((Date.now() - started) / 1000);

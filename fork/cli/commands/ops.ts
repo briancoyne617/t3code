@@ -273,3 +273,109 @@ export function footprintCommand(options: { write: boolean; repo?: string }): vo
     );
   if (rows.some((row) => row.problem)) process.exitCode = 1;
 }
+
+export interface PendingBranch {
+  branch: string;
+  head: string;
+  commits: string[];
+  behindCustom: number;
+  areas: string[];
+  restartsServer: boolean;
+  files: number;
+}
+
+export interface PendingReport {
+  generatedAt: string;
+  deployed: { server?: string; client?: string; custom?: string };
+  customUndeployed: string[];
+  branches: PendingBranch[];
+  devWorktree: { branch: string; uncommitted: number };
+}
+
+function areasOf(files: ReadonlyArray<string>): { areas: string[]; restartsServer: boolean } {
+  const areas = new Set<string>();
+  let restartsServer = false;
+  for (const file of files) {
+    if (file.startsWith("apps/web/")) areas.add("UI");
+    else if (
+      file.startsWith("apps/server/") ||
+      file === "pnpm-lock.yaml" ||
+      file === "package.json"
+    ) {
+      areas.add("server");
+      restartsServer = true;
+    } else if (file.startsWith("packages/")) {
+      areas.add("shared code (UI + server)");
+      restartsServer = true;
+    } else if (file.startsWith("fork/")) areas.add("fork tooling");
+    else if (file.startsWith("apps/desktop/") || file.startsWith("apps/mobile/"))
+      areas.add("desktop/mobile (not used)");
+    else if (file.startsWith("docs/") || file.endsWith(".md")) areas.add("docs");
+    else areas.add("other");
+  }
+  return { areas: [...areas], restartsServer };
+}
+
+/** What dev has that stable does not: every unmerged local branch, classified by what pulling it touches. */
+export function pending(
+  cfg: ForkConfig,
+  options: { json: boolean; write: boolean },
+): PendingReport {
+  const repo = cfg.repo;
+  const state = readState();
+  const lines = (args: string[]) => git(repo, args, true).stdout.split("\n").filter(Boolean);
+  const branches: PendingBranch[] = [];
+  for (const branch of lines(["for-each-ref", "--format=%(refname:short)", "refs/heads/"])) {
+    if (branch === "custom" || branch === "main") continue;
+    if (git(repo, ["merge-base", "--is-ancestor", branch, "custom"], true).code === 0) continue;
+    const files = lines(["diff", "--name-only", `custom...${branch}`]);
+    const { areas, restartsServer } = areasOf(files);
+    branches.push({
+      branch,
+      head: git(repo, ["rev-parse", "--short", branch]).stdout,
+      commits: lines(["log", "--no-merges", "--format=%s", `custom..${branch}`]),
+      behindCustom: Number(
+        git(repo, ["rev-list", "--count", `${branch}..custom`], true).stdout || 0,
+      ),
+      areas,
+      restartsServer,
+      files: files.length,
+    });
+  }
+  const report: PendingReport = {
+    generatedAt: new Date().toISOString(),
+    deployed: {
+      ...(state.server ? { server: state.server.sha.slice(0, 8) } : {}),
+      ...(state.client ? { client: state.client.sha.slice(0, 8) } : {}),
+      custom: revParse(repo, "custom")?.slice(0, 8),
+    },
+    customUndeployed: state.server
+      ? lines(["log", "--no-merges", "--format=%s", `${state.server.sha}..custom`])
+      : [],
+    branches,
+    devWorktree: NodeFS.existsSync(cfg.devWorktree)
+      ? {
+          branch: currentBranch(cfg.devWorktree),
+          uncommitted: git(cfg.devWorktree, ["status", "--porcelain"], true)
+            .stdout.split("\n")
+            .filter(Boolean).length,
+        }
+      : { branch: "", uncommitted: 0 },
+  };
+  if (options.write && !DRY_RUN) {
+    const tmp = `${P.pending}.tmp`;
+    NodeFS.writeFileSync(tmp, `${JSON.stringify(report, null, 2)}\n`);
+    NodeFS.renameSync(tmp, P.pending);
+  }
+  if (options.json) console.log(JSON.stringify(report, null, 2));
+  else if (!options.write) {
+    for (const b of report.branches) {
+      log(
+        `${b.branch} (${b.head}): ${b.commits.length} commit(s), touches ${b.areas.join(", ")}${b.restartsServer ? " — restarts stable" : ""}`,
+      );
+      for (const c of b.commits) console.log(`    • ${c}`);
+    }
+    if (report.branches.length === 0) log("dev has nothing that stable lacks");
+  }
+  return report;
+}
