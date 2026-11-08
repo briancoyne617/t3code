@@ -1,5 +1,6 @@
 import { Button } from "../components/ui/button";
 import { ForkShortcutsDialog } from "./ForkShortcutsDialog";
+import { ForkUpdatesDialog } from "./ForkUpdatesDialog";
 import { TodoList } from "./TodoList";
 
 const matchesAltG = (event: KeyboardEvent) =>
@@ -27,6 +28,7 @@ export function ForkHeaderTools() {
         side="bottom"
         seed={GENERAL_SEED}
       />
+      <ForkUpdatesDialog />
       <ForkShortcutsDialog />
     </div>
   );

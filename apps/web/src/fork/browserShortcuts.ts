@@ -10,7 +10,7 @@ export type ShortcutVerdict =
 const isMac = () => /mac|iphone|ipad/i.test(navigator.platform);
 
 /** `mod+shift+P` → `ctrl+shift+p` on Windows/Linux, `meta+…` on macOS; modifiers sorted. */
-export function normalizeShortcut(key: string): string {
+function normalizeShortcut(key: string): string {
   const parts = key.toLowerCase().split("+").filter(Boolean);
   const main = parts.at(-1) ?? "";
   const mods = new Set(
