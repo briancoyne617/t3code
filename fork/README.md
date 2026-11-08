@@ -121,3 +121,13 @@ Together they bring stable back after a reboot.
   4. To bring your threads along, start it once with `--base-dir ~/.t3-stable` (CLI), or copy `~/.t3-stable/userdata` to `~/.t3/userdata` first.
   5. Delete the Startup-folder `.vbs` if you no longer want WSL kept alive.
 - **Undo the vp Node setup:** `vp env off node` (your shell goes back to nvm's Node); remove the `. "$HOME/.config/vite-plus/env"` line from `~/.bashrc` to remove vp entirely. The original is in `~/.bashrc.bak-before-vp`.
+
+## Todos
+
+Todoist-style lists, kept by a small service of their own (`t3-fork-todos.service`, 127.0.0.1:3775, data in `~/.t3-fork/todos.json`, a daily copy in `~/.t3-fork/todo-backups/`). Restarting it never touches T3 Code or its agents; `fork promote` restarts it when its code changed. Dev runs its own copy on 3875 with `~/.t3-dev/fork-todos.json`.
+
+- **Lists:** general (Alt+G, top left), project (Alt+T, sidebar footer; includes the project's chat todos), chat (Alt+J, the tab at the composer's top right). "All lists" shows everything.
+- **Quick add:** `p1`–`p3`, `today`, `tomorrow`, `fri`, `on mon`, `nov 12`, `11/20`, `in 3 days`, `next week`, `3pm`, `at 9`, `every day|weekday|mon|2 weeks|month`, `@label`. Completing a recurring todo moves it to the next date.
+- **Undo:** every change is undoable from the server's history (so it survives reloads): the Undo button, the toast after a complete or delete, or Ctrl+Z (Ctrl+Shift+Z / Ctrl+Y redo) when focus is not in a text field. Done and Deleted tabs list what was checked off or removed, with Restore.
+- **Chats:** ▶ starts a new chat in the todo's project with the todo as the prompt and links it; 🔗 links the chat you are in. Linked chats show their live status (running, needs you, done, failed).
+- **Agents and scripts:** `t3-todo add "text p2 tomorrow"` (or `fork todo add`). Inside a T3 Code chat it lands on that chat's list; `--thread <id>` / `--project <id>` target another list. Also `t3-todo list [--all]`, `done|rm|restore <id>`, `undo`, `redo`.

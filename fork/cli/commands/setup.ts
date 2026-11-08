@@ -5,9 +5,11 @@ import {
   act,
   capture,
   DEFAULT_CONFIG,
+  FORK_ROOT,
   type ForkConfig,
   HOME,
   log,
+  NODE_BIN,
   P,
   readJson,
   TOOLING_REPO,
@@ -138,6 +140,37 @@ export async function setup(cfg: ForkConfig): Promise<void> {
       systemctl(["daemon-reload"]);
       systemctl(["enable", "--now", "t3-fork-pending.timer"]);
     });
+  }
+
+  // The todo service (fork/todos/server.ts): its own unit, so updating it never restarts T3 Code.
+  const todoService = [
+    "[Unit]",
+    "Description=T3 Code fork: todo service (127.0.0.1:3775)",
+    "",
+    "[Service]",
+    `ExecStart=${NODE_BIN} --disable-warning=ExperimentalWarning ${NodePath.join(cfg.repo, "fork/todos/server.ts")} --port 3775 --data ${NodePath.join(FORK_ROOT, "todos.json")}`,
+    "Restart=on-failure",
+    "RestartSec=2",
+    "",
+    "[Install]",
+    "WantedBy=default.target",
+    "",
+  ].join("\n");
+  const todoPath = NodePath.join(unitDir, "t3-fork-todos.service");
+  if (current(todoPath) !== todoService) {
+    act("install the todo service (t3-fork-todos, 127.0.0.1:3775)", () => {
+      NodeFS.writeFileSync(todoPath, todoService);
+      systemctl(["daemon-reload"]);
+      systemctl(["enable", "t3-fork-todos.service"]);
+      systemctl(["restart", "t3-fork-todos.service"]);
+    });
+  }
+
+  // `t3-todo` on PATH for agents in any project: same as `fork todo`.
+  const todoShim = NodePath.join(HOME, ".local/bin/t3-todo");
+  const todoShimText = `#!/bin/sh\n# T3 Code personal fork: the shared todo list (fork todo).\nexec "${shim}" todo "$@"\n`;
+  if (current(todoShim) !== todoShimText) {
+    act(`install ${todoShim}`, () => NodeFS.writeFileSync(todoShim, todoShimText, { mode: 0o755 }));
   }
 
   setupWindowsKeepAlive();

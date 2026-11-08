@@ -16,6 +16,7 @@ Rules:
   - The root AGENTS.md's warnings about `~/.t3/userdata` apply to `~/.t3-stable/userdata` here.
   - `~/.t3` is unused and should stay that way.
 - Start dev with `./fork/bin/fork dev`, not `vp run dev`: plain `vp run dev` in a worktree uses the worktree's own `.t3` home and different ports. Stop dev only by the PID you started.
+- The owner's todo lists: `t3-todo add "text p2 tomorrow @label"` adds to this chat's list (`t3-todo list` shows it). Use it when the owner asks you to note a todo, or for follow-ups you would otherwise only mention in a reply.
 - Do not run `fork promote`, `fork rollback` or `fork sync-upstream` unless the owner asks. They deploy to or change stable. `fork status` is always safe.
 - Commit on the feature branch in `~/ide/t3code-dev`. Never commit to `main` (a mirror of upstream). Promote is what lands work on `custom`.
 

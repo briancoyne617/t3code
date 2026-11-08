@@ -6,6 +6,7 @@ import {
   act,
   actAsync,
   ask,
+  capture,
   currentLog,
   DRY_RUN,
   flipPointer,
@@ -431,6 +432,25 @@ function explainChanges(
 }
 
 /** Fast-forward `custom` to the deployed commit and push it. Never forces. */
+/** The todo service runs from this checkout; restart it (about a second, no agent impact) when its code moved. */
+function restartTodoServiceIfChanged(repo: string, before: string | undefined): void {
+  if (!before) return;
+  const changed = git(
+    repo,
+    ["diff", "--quiet", before, "HEAD", "--", "fork/todos", "apps/web/src/fork/todoModel.ts"],
+    true,
+  );
+  if (changed.code === 0) return;
+  const restarted = capture("systemctl", ["--user", "try-restart", "t3-fork-todos.service"], {
+    allowFail: true,
+  });
+  log(
+    restarted.code === 0
+      ? "restarted the todo service (its code changed)"
+      : `could not restart t3-fork-todos.service: ${restarted.stderr}`,
+  );
+}
+
 export function finalizeGit(cfg: ForkConfig, sha: string): void {
   const repo = cfg.repo;
   process.on("exit", () => {
@@ -450,7 +470,9 @@ export function finalizeGit(cfg: ForkConfig, sha: string): void {
     const release = NodeFS.readdirSync(P.releases).find((name) => name.endsWith(sha.slice(0, 8)));
     if (release && !revParse(repo, sha))
       git(repo, ["fetch", "--quiet", NodePath.join(P.releases, release, "src"), sha]);
+    const before = revParse(repo, "HEAD");
     git(repo, ["merge", "--ff-only", "--quiet", sha]);
+    restartTodoServiceIfChanged(repo, before);
   });
   if (cfg.push) {
     act("push custom to origin", () => {

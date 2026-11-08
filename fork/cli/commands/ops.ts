@@ -5,6 +5,7 @@ import * as NodeChildProcess from "node:child_process";
 import {
   childEnv,
   DRY_RUN,
+  NODE_BIN,
   ForkError,
   type ForkConfig,
   HOME,
@@ -188,6 +189,22 @@ export async function dev(cfg: ForkConfig, extraArgs: ReadonlyArray<string>): Pr
     // Own process group: upstream's dev runner does not pass signals down its chain, so stop the whole group.
     detached: true,
   });
+  // Dev's own todo service (the dev UI talks to 3875), with dev's own data.
+  const todos = DRY_RUN
+    ? undefined
+    : NodeChildProcess.spawn(
+        NODE_BIN,
+        [
+          "--disable-warning=ExperimentalWarning",
+          NodePath.join(cfg.devWorktree, "fork/todos/server.ts"),
+          "--port",
+          "3875",
+          "--data",
+          NodePath.join(cfg.devHome, "fork-todos.json"),
+        ],
+        { stdio: "ignore" },
+      );
+  process.on("exit", () => todos?.kill());
   const rewrite = (chunk: Buffer) =>
     chunk.toString().replace(/http:\/\/localhost:(\d+)/g, "http://127.0.0.1:$1");
   child.stdout.on("data", (chunk: Buffer) => process.stdout.write(rewrite(chunk)));

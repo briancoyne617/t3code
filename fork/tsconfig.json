@@ -14,5 +14,5 @@
     "types": ["node"],
     "lib": ["ESNext"]
   },
-  "include": ["cli/**/*.ts"]
+  "include": ["cli/**/*.ts", "todos/**/*.ts"]
 }
