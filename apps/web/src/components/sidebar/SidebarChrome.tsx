@@ -23,7 +23,7 @@ import {
 } from "../SidebarStageBackdrop";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { ForkTestButton } from "../../fork/ForkTestButton";
+import { ForkTodos } from "../../fork/ForkTodos";
 import {
   SidebarFooter,
   SidebarMenu,
@@ -298,7 +298,7 @@ export const SidebarChromeFooter = memo(function SidebarChromeFooter() {
       <SidebarProviderUpdatePill />
       <SidebarUpdateArchitectureWarning />
       <SidebarUtilityMenu />
-      <ForkTestButton />
+      <ForkTodos />
     </SidebarFooter>
   );
 });
