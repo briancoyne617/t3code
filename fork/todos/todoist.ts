@@ -24,6 +24,18 @@ export interface TodoistState {
   lastSync?: string;
   lastError?: string;
   ingested: number;
+  /** Where an ingested task goes when it names no project or chat (null: the general list). */
+  defaultThreadId?: string | null;
+  /** Explicit pins: Todoist task id → T3 todo id, for duplicates the matcher misses. */
+  pins?: Record<string, string>;
+  /** Every Todoist task folded into an existing todo, with its original text, so a wrong match can be undone. */
+  adopted?: Array<{
+    at: string;
+    todoistId: string;
+    todoistText: string;
+    todoId: string;
+    todoText: string;
+  }>;
 }
 
 interface TodoistItem {
@@ -139,19 +151,59 @@ export function ingestText(content: string): string | null {
 }
 
 /** Which list an ingested todo belongs to: a chat or project it names, else the general list. */
-function route(text: string, names: Names): { projectId: string | null; threadId: string | null } {
+function route(
+  text: string,
+  names: Names,
+  defaultThreadId: string | null | undefined,
+): { projectId: string | null; threadId: string | null } {
   const lower = text.toLowerCase();
   const mentions = (title: string) => title.length >= 4 && lower.includes(title.toLowerCase());
   for (const [threadId, thread] of names.threads)
     if (mentions(thread.title)) return { projectId: thread.projectId, threadId };
   for (const [projectId, title] of names.projects)
     if (mentions(title)) return { projectId, threadId: null };
-  return { projectId: null, threadId: null };
+  const fallback = defaultThreadId ? names.threads.get(defaultThreadId) : undefined;
+  return fallback && defaultThreadId
+    ? { projectId: fallback.projectId, threadId: defaultThreadId }
+    : { projectId: null, threadId: null };
+}
+
+const STOP = new Set(
+  "a an and the to of in on for with is are be it its this that my i me we do get have make add all any so some also too there here what which when need want should can just".split(
+    " ",
+  ),
+);
+
+function words(text: string): Set<string> {
+  return new Set(
+    text
+      .toLowerCase()
+      .replace(/[^a-z0-9 ]+/g, " ")
+      .split(/\s+/)
+      .map((word) => word.replace(/(ing|ed|es|s|e)$/, ""))
+      .filter((word) => word.length > 1 && !STOP.has(word)),
+  );
+}
+
+/** An existing T3 todo that says the same thing (most of the shorter one's words appear in the other). */
+export function findDuplicate(text: string, todos: ReadonlyArray<Todo>): Todo | undefined {
+  const mine = words(text);
+  let best: { todo: Todo; score: number } | undefined;
+  for (const todo of todos) {
+    if (todo.status === "deleted") continue;
+    const theirs = words(todo.text);
+    const shared = [...mine].filter((word) => theirs.has(word)).length;
+    const score = shared / Math.max(1, Math.min(mine.size, theirs.size));
+    const similar = (shared >= 3 && score >= 0.5) || (shared >= 5 && score >= 0.4);
+    if (similar && (!best || score > best.score)) best = { todo, score };
+  }
+  return best?.todo;
 }
 
 /** Every active task outside the T3 project, for a dry-run report. */
 export interface DryRunReport {
   wouldIngest: Array<{ text: string; list: string }>;
+  duplicates: Array<{ todoist: string; existing: string }>;
   otherTasks: string[];
   commands: Record<string, number>;
 }
@@ -228,7 +280,31 @@ export async function syncTodoist(
     if (item.checked || item.project_id === projectId) continue;
     const text = ingestText(item.content);
     if (!text) continue;
-    const target = route(text, names);
+    const pinned = state.pins?.[item.id];
+    const existing = pinned
+      ? host.todos().find((todo) => todo.id === pinned)
+      : findDuplicate(text, host.todos());
+    if (existing) {
+      // Already tracked: adopt the Todoist task as that todo's mirror (it moves into "T3"; T3's text wins).
+      if (!Object.values(state.tasks).some((entry) => entry.id === item.id)) {
+        for (const [todoId, entry] of Object.entries(state.tasks))
+          if (todoId === existing.id && entry.id !== item.id && itemsById.has(entry.id))
+            commands.push({ type: "item_delete", uuid: uuid(), args: { id: entry.id } });
+        state.tasks[existing.id] = { id: item.id, hash: "" };
+      }
+      dryRun?.duplicates.push({ todoist: text, existing: existing.text });
+      if (!dryRun)
+        (state.adopted ??= []).push({
+          at: new Date().toISOString(),
+          todoistId: item.id,
+          todoistText: item.content,
+          todoId: existing.id,
+          todoText: existing.text,
+        });
+      notes.push(`"${text}" is already tracked`);
+      continue;
+    }
+    const target = route(text, names, state.defaultThreadId);
     const todo = host.newTodo({
       text,
       priority: fromTodoistPriority(item.priority),
