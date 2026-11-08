@@ -286,14 +286,13 @@ export interface PendingBranch {
   files: number;
 }
 
-/** A UI-only promote still ships a full release built from custom, so the newest deploy is what is live. */
+/** The newest successful deploy (UI swap, restart, rollback or a tooling-only promote) is what is live. */
 function newestDeployedSha(state: {
-  server?: { sha: string; at: string };
-  client?: { sha: string; at: string };
+  history: ReadonlyArray<{ at: string; result: string; sha: string }>;
 }): string | undefined {
-  const deploys = [state.server, state.client].filter((d) => d !== undefined);
-  deploys.sort((a, b) => b.at.localeCompare(a.at));
-  return deploys[0]?.sha;
+  const ok = state.history.filter((entry) => entry.result === "ok" && entry.sha);
+  ok.sort((a, b) => b.at.localeCompare(a.at));
+  return ok[0]?.sha;
 }
 
 export interface PendingReport {
