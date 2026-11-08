@@ -2,7 +2,7 @@
   "AGENTS.md": 7,
   "apps/server/src/cli/server.ts": 4,
   "apps/web/src/components/chat/ChatComposer.tsx": 2,
-  "apps/web/src/components/chat/useComposerSend.ts": 22,
+  "apps/web/src/components/chat/useComposerSend.ts": 26,
   "apps/web/src/components/ComposerPromptEditorTiptap.tsx": 2,
   "apps/web/src/components/Sidebar.tsx": 2,
   "apps/web/src/components/sidebar/SidebarChrome.tsx": 4,
