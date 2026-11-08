@@ -278,6 +278,7 @@ import {
 } from "./preparingComposerImages";
 import { ComposerControlsBar } from "./ComposerControlsBar";
 import { composerCommandKeyHandler } from "./composerCommandKey";
+import { ForkChatTodos } from "../../fork/ForkChatTodos";
 
 function consumePasteAsTextShortcut(deadline: { current: number }): boolean {
   const armed = Date.now() <= deadline.current;
@@ -3226,6 +3227,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
           pulseKey={stashPulseKey}
           onToggleMenu={toggleStashMenuStable}
         />
+        <ForkChatTodos threadRef={routeThreadRef} />
       </ComposerBanner.Dock>
       <div className="relative">
         <ComposerSurface.Main
