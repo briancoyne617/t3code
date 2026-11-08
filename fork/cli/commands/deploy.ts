@@ -354,7 +354,7 @@ async function checks(
     runStep(
       `checks for changes since ${base.slice(0, 8)} (vp run check:changed)`,
       VP_BIN,
-      ["run", "check:changed", base, "--concurrency", String(concurrency)],
+      ["run", "check:changed", base, "--concurrency", String(concurrency), "--timeout", "3600"],
       { cwd: src },
     );
   }
