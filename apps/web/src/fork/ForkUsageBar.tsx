@@ -1,6 +1,7 @@
 import { useAtomValue } from "@effect/atom-react";
 import type { ServerProviderUsageWindow } from "@t3tools/contracts";
 
+import { useNowMinute } from "../hooks/useNowMinute";
 import { primaryServerProvidersAtom } from "../state/server";
 
 function timeLeft(resetsAt: string | undefined, now: number): string {
@@ -26,13 +27,13 @@ function windowLabel(window: ServerProviderUsageWindow): string {
 /** Always-visible usage per provider: % used of each window and the time until it resets. */
 export function ForkUsageBar() {
   const providers = useAtomValue(primaryServerProvidersAtom);
-  const now = Date.now();
+  const now = Date.parse(`${useNowMinute()}:00Z`);
   const rows = providers.filter(
     (provider) => provider.enabled && (provider.usageLimits?.windows.length ?? 0) > 0,
   );
   if (rows.length === 0) return null;
   return (
-    <div className="flex flex-col gap-0.5 px-3 pb-1 text-[11px] leading-tight tabular-nums">
+    <div className="flex flex-col gap-0.5 px-3 pb-1 text-2xs leading-tight tabular-nums">
       {rows.map((provider) => (
         <div key={provider.instanceId} className="flex flex-wrap items-baseline gap-x-2">
           <span className="font-medium">{provider.displayName ?? provider.instanceId}</span>
@@ -40,7 +41,7 @@ export function ForkUsageBar() {
             <span
               key={window.id}
               className={tone(window.usedPercent)}
-              title={`${window.label}: ${Math.round(window.usedPercent)}% used${window.resetsAt ? `, resets ${new Date(window.resetsAt).toLocaleString()}` : ""}`}
+              aria-label={`${window.label}: ${Math.round(window.usedPercent)}% used`}
             >
               {windowLabel(window)} {Math.round(window.usedPercent)}%
               {window.resetsAt ? ` · ${timeLeft(window.resetsAt, now)}` : ""}
