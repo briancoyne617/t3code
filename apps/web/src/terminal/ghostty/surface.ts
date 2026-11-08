@@ -362,7 +362,8 @@ function isTerminalPasteShortcut(
     return event.shiftKey && !event.ctrlKey && !event.metaKey;
   }
   if (key !== "v") return false;
-  return isMacPlatform(platform) ? event.metaKey : event.ctrlKey && event.shiftKey;
+  // Fork: plain Ctrl+V pastes too, as in Windows Terminal.
+  return isMacPlatform(platform) ? event.metaKey : event.ctrlKey && !event.metaKey;
 }
 
 // X11/Wayland expects middle-click paste; macOS and Windows use it for autoscroll.
