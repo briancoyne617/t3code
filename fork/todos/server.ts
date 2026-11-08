@@ -374,10 +374,22 @@ async function handle(req: NodeHttp.IncomingMessage, res: NodeHttp.ServerRespons
 
   if (method === "GET" && path === "/api/health") return json(200, { ok: true, revision });
   if (method === "GET" && path === "/api/todos") return json(200, snapshot());
+  if (path === "/api/todoist/config" && method === "POST") {
+    const body = await readBody<{ defaultThreadId?: string | null; pins?: Record<string, string> }>(
+      req,
+    );
+    if (body.defaultThreadId !== undefined) todoistState.defaultThreadId = body.defaultThreadId;
+    if (body.pins) todoistState.pins = { ...todoistState.pins, ...body.pins };
+    saveState(todoistStateFile, todoistState);
+    return json(200, {
+      defaultThreadId: todoistState.defaultThreadId ?? null,
+      pins: todoistState.pins ?? {},
+    });
+  }
   if (path === "/api/todoist/dry-run" && method === "POST") {
     const token = todoistToken();
     if (!token) throw new HttpError(400, "no Todoist token yet");
-    const report = { wouldIngest: [], otherTasks: [], commands: {} };
+    const report = { wouldIngest: [], duplicates: [], otherTasks: [], commands: {} };
     await syncTodoist(token, todoistState, todoistHost(), report);
     return json(200, report);
   }
