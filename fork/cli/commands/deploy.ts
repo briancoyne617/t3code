@@ -337,26 +337,66 @@ async function checks(
   if (full) {
     runStep("typecheck everything (vp run typecheck)", VP_BIN, ["run", "typecheck"], { cwd: src });
     runStep("run every test (vp run test)", VP_BIN, ["run", "test"], { cwd: src });
-  } else if (changed.every((file) => file.startsWith("fork/"))) {
-    // Fork tooling is in no upstream package; upstream's check would typecheck all 40 packages for it.
-    log(
-      `only fork/ changed since ${base.slice(0, 8)} (${changed.length} file(s)); running the fork's own checks`,
-    );
-    runStep(
-      "typecheck fork tooling",
-      NodePath.join(src, "node_modules/.bin/tsc"),
-      ["-p", "fork/tsconfig.json"],
-      { cwd: src },
-    );
-    runStep("lint fork tooling", VP_BIN, ["lint", "fork/"], { cwd: src });
-    runStep("format check fork tooling", VP_BIN, ["fmt", "--check", "fork/"], { cwd: src });
   } else {
-    runStep(
-      `checks for changes since ${base.slice(0, 8)} (vp run check:changed)`,
-      VP_BIN,
-      ["run", "check:changed", base, "--concurrency", String(concurrency), "--timeout", "3600"],
-      { cwd: src },
+    // Targeted checks: upstream's check:changed typechecks all 40 packages whenever a file outside a
+    // package (like fork/footprint.json) changes, which starves agents on this 8 GB machine.
+    const code = changed.filter(
+      (file) =>
+        /\.(ts|tsx|js|mjs|json|css|md)$/.test(file) && NodeFS.existsSync(NodePath.join(src, file)),
     );
+    const packages = new Set<string>();
+    for (const file of code) {
+      const match = /^(apps|packages)\/[^/]+/.exec(file);
+      if (!match) continue;
+      const manifest = NodePath.join(src, match[0], "package.json");
+      const name = NodeFS.existsSync(manifest)
+        ? (JSON.parse(NodeFS.readFileSync(manifest, "utf8")) as { name?: string }).name
+        : undefined;
+      if (name) packages.add(name);
+    }
+    log(
+      `checking ${code.length} changed file(s) in ${packages.size} package(s): ${[...packages].join(", ") || "none"}`,
+    );
+    if (code.length > 0) {
+      runStep("format check changed files", VP_BIN, ["fmt", "--check", ...code], { cwd: src });
+      const lintable = code.filter((file) => /\.(ts|tsx|js|mjs)$/.test(file));
+      if (lintable.length > 0)
+        runStep("lint changed files", VP_BIN, ["lint", ...lintable], { cwd: src });
+    }
+    if (changed.some((file) => file.startsWith("fork/cli/"))) {
+      runStep(
+        "typecheck fork tooling",
+        NodePath.join(src, "node_modules/.bin/tsc"),
+        ["-p", "fork/tsconfig.json"],
+        { cwd: src },
+      );
+    }
+    if (packages.size > 0) {
+      runStep(
+        `typecheck ${[...packages].join(", ")}`,
+        VP_BIN,
+        [
+          "run",
+          ...[...packages].flatMap((name) => ["--filter", name]),
+          "--concurrency-limit",
+          String(concurrency),
+          "typecheck",
+        ],
+        { cwd: src },
+      );
+    }
+    const tests = code.flatMap((file) => {
+      if (/\.test\.tsx?$/.test(file)) return [file];
+      const sibling = file.replace(/\.(tsx?)$/, ".test.$1");
+      return sibling !== file && NodeFS.existsSync(NodePath.join(src, sibling)) ? [sibling] : [];
+    });
+    if (tests.length > 0)
+      runStep(
+        `tests next to changes (${tests.length})`,
+        VP_BIN,
+        ["test", "run", ...new Set(tests)],
+        { cwd: src },
+      );
   }
 }
 
