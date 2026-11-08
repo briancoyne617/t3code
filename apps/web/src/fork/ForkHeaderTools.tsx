@@ -1,7 +1,10 @@
 import { Button } from "../components/ui/button";
 import { ForkShortcutsDialog } from "./ForkShortcutsDialog";
 import { ForkUpdatesDialog } from "./ForkUpdatesDialog";
+import { installNoAutofill } from "./noAutofill";
 import { TodoList } from "./TodoList";
+
+installNoAutofill();
 
 const matchesAltG = (event: KeyboardEvent) =>
   event.altKey && !event.shiftKey && !event.ctrlKey && !event.metaKey && event.code === "KeyG";
