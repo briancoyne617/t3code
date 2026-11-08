@@ -229,7 +229,7 @@ export function runStep(
     spawnOptions.stdio = ["ignore", fd, fd];
   }
   // Builds and checks run at the lowest CPU/IO priority so they never starve the stable server's agents.
-  const lowPriority = NodeOS.platform() === "linux";
+  const lowPriority = NodeFS.existsSync("/usr/bin/ionice") && NodeFS.existsSync("/usr/bin/nice");
   const result = lowPriority
     ? NodeChildProcess.spawnSync(
         "nice",
