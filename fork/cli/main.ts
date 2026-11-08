@@ -27,7 +27,6 @@ const HELP = `fork — tooling for the personal T3 Code fork (docs: fork/README.
                                      go back to the release before the current one
   fork sync-upstream [--to main|<tag>] [--continue <dir>] [--skip-tests]
                                      merge the latest upstream stable tag (or main) into custom; never deploys
-  fork pending [--json] [--write]    what dev branches have that stable lacks (the UI reads ~/.t3-fork/pending.json)
   fork pending [--json] [--write]    what dev branches have that stable lacks (feeds the Dev ↔ Stable screen)
   fork setup                         one-time install: dirs, dev worktree, systemd service, t3 wrapper, keep-alive
   fork hooks [--check]               regenerate the fork's entries in t3.json and AGENTS.md

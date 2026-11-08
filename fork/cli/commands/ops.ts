@@ -286,7 +286,7 @@ export interface PendingBranch {
 
 export interface PendingReport {
   generatedAt: string;
-  deployed: { server?: string; client?: string; custom?: string };
+  deployed: { server?: string; ui?: string; custom?: string };
   customUndeployed: string[];
   branches: PendingBranch[];
   devWorktree: { branch: string; uncommitted: number };
@@ -346,7 +346,7 @@ export function pending(
     generatedAt: new Date().toISOString(),
     deployed: {
       ...(state.server ? { server: state.server.sha.slice(0, 8) } : {}),
-      ...(state.client ? { client: state.client.sha.slice(0, 8) } : {}),
+      ...(state.client ? { ui: state.client.sha.slice(0, 8) } : {}),
       custom: revParse(repo, "custom")?.slice(0, 8),
     },
     customUndeployed: state.server
