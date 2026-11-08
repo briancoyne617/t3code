@@ -12,6 +12,14 @@ import {
   type Priority,
   type Todo,
 } from "../../apps/web/src/fork/todoModel.ts";
+import {
+  loadState,
+  saveState,
+  syncTodoist,
+  type TodoistHost,
+  type TodoistState,
+  tokenFile,
+} from "./todoist.ts";
 
 interface Change {
   before: Todo | null;
@@ -40,6 +48,7 @@ const { values } = NodeUtil.parseArgs({
     port: { type: "string", default: "3775" },
     host: { type: "string", default: "127.0.0.1" },
     data: { type: "string" },
+    "stable-db": { type: "string" },
   },
 });
 const dataFile = values.data ?? NodePath.join(process.env.HOME ?? ".", ".t3-fork", "todos.json");
@@ -102,6 +111,7 @@ function commit(label: string, changes: Change[]): void {
   if (store.undo.length > UNDO_LIMIT) store.undo.splice(0, store.undo.length - UNDO_LIMIT);
   store.redo = [];
   persist();
+  scheduleTodoist(15_000);
 }
 
 function replay(from: Op[], to: Op[], direction: "undo" | "redo"): Op | null {
@@ -163,6 +173,82 @@ function makeTodo(body: CreateBody, now: Date): Todo {
     deletedAt: null,
     createdBy: body.createdBy ?? "user",
     order: store.todos.reduce((max, t) => Math.max(max, t.order), 0) + 1,
+  };
+}
+
+function newTodo(fields: Partial<Todo> & { text: string }): Todo {
+  const stamp = new Date().toISOString();
+  return {
+    id: NodeCrypto.randomUUID(),
+    priority: 4,
+    due: null,
+    time: null,
+    recur: null,
+    labels: [],
+    projectId: null,
+    threadId: null,
+    links: [],
+    status: "open",
+    createdAt: stamp,
+    updatedAt: stamp,
+    completedAt: null,
+    deletedAt: null,
+    createdBy: "user",
+    order: store.todos.reduce((max, t) => Math.max(max, t.order), 0) + 1,
+    ...fields,
+  };
+}
+
+// Todoist backup + ingest: runs every 2 minutes, and 15s after a change, once a token is in place.
+const todoistStateFile = NodePath.join(NodePath.dirname(dataFile), "todoist.json");
+const todoistState: TodoistState = loadState(todoistStateFile);
+let todoistTimer: NodeJS.Timeout | undefined;
+let todoistRunning = false;
+let todoistLast = "";
+
+function todoistToken(): string | null {
+  try {
+    return NodeFS.readFileSync(tokenFile(dataFile), "utf8").trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+function scheduleTodoist(delay: number): void {
+  if (todoistTimer) clearTimeout(todoistTimer);
+  todoistTimer = setTimeout(() => void runTodoist(), delay);
+}
+
+async function runTodoist(): Promise<void> {
+  scheduleTodoist(120_000);
+  const token = todoistToken();
+  if (!token || todoistRunning) return;
+  todoistRunning = true;
+  try {
+    todoistLast = await syncTodoist(token, todoistState, todoistHost());
+    delete todoistState.lastError;
+  } catch (error) {
+    todoistState.lastError = error instanceof Error ? error.message : String(error);
+    console.error("todoist sync:", todoistState.lastError);
+  } finally {
+    saveState(todoistStateFile, todoistState);
+    todoistRunning = false;
+  }
+}
+
+function todoistHost(): TodoistHost {
+  return {
+    todos: () => store.todos,
+    commit: (label, changes) => {
+      for (const change of changes) put(change.after, (change.after ?? change.before)!.id);
+      store.undo.push({ at: new Date().toISOString(), label, changes });
+      store.redo = [];
+      persist();
+    },
+    newTodo,
+    stableDb:
+      values["stable-db"] ??
+      NodePath.join(process.env.HOME ?? ".", ".t3-stable", "userdata", "statev2.sqlite"),
   };
 }
 
@@ -288,6 +374,24 @@ async function handle(req: NodeHttp.IncomingMessage, res: NodeHttp.ServerRespons
 
   if (method === "GET" && path === "/api/health") return json(200, { ok: true, revision });
   if (method === "GET" && path === "/api/todos") return json(200, snapshot());
+  if (path === "/api/todoist/dry-run" && method === "POST") {
+    const token = todoistToken();
+    if (!token) throw new HttpError(400, "no Todoist token yet");
+    const report = { wouldIngest: [], otherTasks: [], commands: {} };
+    await syncTodoist(token, todoistState, todoistHost(), report);
+    return json(200, report);
+  }
+  if (path === "/api/todoist") {
+    if (method === "POST") await runTodoist();
+    return json(200, {
+      enabled: todoistToken() !== null,
+      lastSync: todoistState.lastSync ?? null,
+      lastError: todoistState.lastError ?? null,
+      last: todoistLast,
+      mirrored: Object.keys(todoistState.tasks).length,
+      ingested: todoistState.ingested,
+    });
+  }
   if (method === "GET" && path === "/api/events") {
     res.writeHead(200, {
       "content-type": "text/event-stream",
@@ -371,6 +475,7 @@ const server = NodeHttp.createServer((req, res) => {
   });
 });
 
+scheduleTodoist(5_000);
 server.listen(Number(values.port), values.host, () => {
   console.log(`fork todos on http://${values.host}:${values.port} (data ${dataFile})`);
 });

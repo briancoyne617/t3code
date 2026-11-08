@@ -95,9 +95,19 @@ export async function todoCommand(
       );
       return;
     }
+    case "todoist": {
+      // fork todo todoist [status|dry-run|sync]
+      const sub = rest[0] ?? "status";
+      const result =
+        sub === "dry-run"
+          ? await call<unknown>("POST", "/todoist/dry-run")
+          : await call<unknown>(sub === "sync" ? "POST" : "GET", "/todoist");
+      console.log(JSON.stringify(result, null, 2));
+      return;
+    }
     default:
       throw new ForkError(
-        `unknown todo action "${action}" (add, list, done, rm, restore, undo, redo)`,
+        `unknown todo action "${action}" (add, list, done, rm, restore, undo, redo, todoist)`,
       );
   }
 }
