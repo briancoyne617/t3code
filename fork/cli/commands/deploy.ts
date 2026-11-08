@@ -28,6 +28,7 @@ import {
   writeJsonAtomic,
 } from "../lib/core.ts";
 import { applyHooks, footprint } from "../lib/hooks.ts";
+import { pending } from "./ops.ts";
 import {
   buildRelease,
   installRelease,
@@ -432,6 +433,13 @@ function explainChanges(
 /** Fast-forward `custom` to the deployed commit and push it. Never forces. */
 export function finalizeGit(cfg: ForkConfig, sha: string): void {
   const repo = cfg.repo;
+  process.on("exit", () => {
+    try {
+      pending(cfg, { json: false, write: true });
+    } catch {
+      // the timer refreshes it anyway
+    }
+  });
   act(`fast-forward custom to ${sha.slice(0, 8)}`, () => {
     if (currentBranch(repo) !== "custom" || !isClean(repo)) {
       warn(

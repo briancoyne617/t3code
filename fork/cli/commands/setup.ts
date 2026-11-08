@@ -100,6 +100,46 @@ export async function setup(cfg: ForkConfig): Promise<void> {
     }
   }
 
+  // Keeps ~/.t3-fork/pending.json (the Dev <-> Stable screen) fresh. git only, lowest priority.
+  const unitDir = NodePath.dirname(unitPath(cfg));
+  const shim = NodePath.join(cfg.repo, "fork/bin/fork");
+  const pendingService = [
+    "[Unit]",
+    "Description=T3 Code fork: refresh the dev vs stable summary",
+    "",
+    "[Service]",
+    "Type=oneshot",
+    "Nice=19",
+    "IOSchedulingClass=idle",
+    `ExecStart=${shim} pending --write`,
+    "",
+  ].join("\n");
+  const pendingTimer = [
+    "[Unit]",
+    "Description=Refresh the fork's dev vs stable summary",
+    "",
+    "[Timer]",
+    "OnBootSec=1min",
+    "OnUnitActiveSec=2min",
+    "",
+    "[Install]",
+    "WantedBy=timers.target",
+    "",
+  ].join("\n");
+  const servicePath = NodePath.join(unitDir, "t3-fork-pending.service");
+  const timerPath = NodePath.join(unitDir, "t3-fork-pending.timer");
+  const current = (file: string) =>
+    NodeFS.existsSync(file) ? NodeFS.readFileSync(file, "utf8") : "";
+  if (current(servicePath) !== pendingService || current(timerPath) !== pendingTimer) {
+    act("install the pending-summary timer (every 2 minutes)", () => {
+      NodeFS.mkdirSync(unitDir, { recursive: true });
+      NodeFS.writeFileSync(servicePath, pendingService);
+      NodeFS.writeFileSync(timerPath, pendingTimer);
+      systemctl(["daemon-reload"]);
+      systemctl(["enable", "--now", "t3-fork-pending.timer"]);
+    });
+  }
+
   setupWindowsKeepAlive();
 
   const linger = capture("loginctl", ["show-user", process.env.USER ?? "", "--property=Linger"], {

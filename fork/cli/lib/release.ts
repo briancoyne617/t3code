@@ -187,6 +187,8 @@ export function sealRelease(
   const web = NodePath.join(dir, "web");
   NodeFS.rmSync(web, { recursive: true, force: true });
   NodeFS.cpSync(client, web, { recursive: true });
+  // Stable serves the live "what dev has" summary next to the UI (see `fork pending`).
+  NodeFS.symlinkSync(P.pending, NodePath.join(web, "fork-pending.json"));
   if (info.carryFrom)
     carryAssets(NodePath.join(info.carryFrom, "assets"), NodePath.join(web, "assets"));
 

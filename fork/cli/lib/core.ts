@@ -21,6 +21,7 @@ export const P = {
   work: NodePath.join(FORK_ROOT, "work"),
   plans: NodePath.join(FORK_ROOT, "plans"),
   stableEnv: NodePath.join(FORK_ROOT, "stable.env"),
+  pending: NodePath.join(FORK_ROOT, "pending.json"),
 };
 
 export interface ForkConfig {
