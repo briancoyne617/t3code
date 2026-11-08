@@ -103,7 +103,9 @@ export async function status(
       custom: custom?.slice(0, 8),
       deployedServerSha: state.server?.sha.slice(0, 8),
       customAheadOfDeployed:
-        custom && state.server ? count(`${state.server.sha}..custom`) : undefined,
+        custom && newestDeployedSha(state)
+          ? count(`${newestDeployedSha(state)}..custom`)
+          : undefined,
       behindUpstreamMain: upstreamMain ? count(`custom..${upstreamMain}`) : undefined,
       latestStableTag: stableTag,
       containsLatestStableTag: stableTag
@@ -284,6 +286,16 @@ export interface PendingBranch {
   files: number;
 }
 
+/** A UI-only promote still ships a full release built from custom, so the newest deploy is what is live. */
+function newestDeployedSha(state: {
+  server?: { sha: string; at: string };
+  client?: { sha: string; at: string };
+}): string | undefined {
+  const deploys = [state.server, state.client].filter((d) => d !== undefined);
+  deploys.sort((a, b) => b.at.localeCompare(a.at));
+  return deploys[0]?.sha;
+}
+
 export interface PendingReport {
   generatedAt: string;
   deployed: { server?: string; ui?: string; custom?: string };
@@ -349,8 +361,8 @@ export function pending(
       ...(state.client ? { ui: state.client.sha.slice(0, 8) } : {}),
       custom: revParse(repo, "custom")?.slice(0, 8),
     },
-    customUndeployed: state.server
-      ? lines(["log", "--no-merges", "--format=%s", `${state.server.sha}..custom`])
+    customUndeployed: newestDeployedSha(state)
+      ? lines(["log", "--no-merges", "--format=%s", `${newestDeployedSha(state)}..custom`])
       : [],
     branches,
     devWorktree: NodeFS.existsSync(cfg.devWorktree)
