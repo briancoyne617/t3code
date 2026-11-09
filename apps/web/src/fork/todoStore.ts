@@ -4,9 +4,10 @@ import { toastManager } from "../components/ui/toast";
 import type { Todo } from "./todoModel";
 
 // The fork todo service (fork/todos/server.ts). Stable's page (port 3773) uses 3775; dev uses 3875.
+// Always loopback: the service listens only there, and the page may be opened by a LAN address.
 export function serviceUrl(): string {
   const port = window.location.port === "3773" ? 3775 : 3875;
-  return `http://${window.location.hostname}:${port}/api`;
+  return `http://127.0.0.1:${port}/api`;
 }
 
 interface TodoSnapshot {
@@ -45,7 +46,9 @@ async function refresh() {
     );
     set({ ready: true, error: null, todos: data.todos, undo: data.undo, redo: data.redo });
   } catch {
-    set({ error: "The todo service is not answering (systemctl --user status t3-fork-todos)" });
+    set({
+      error: `Can't reach the todo service at ${serviceUrl()}. Your todos are safe; check: systemctl --user status t3-fork-todos`,
+    });
   }
 }
 

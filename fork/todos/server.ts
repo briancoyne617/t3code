@@ -333,7 +333,15 @@ function allowedOrigin(origin: string | undefined): boolean {
   if (!origin) return true;
   try {
     const url = new URL(origin);
-    return url.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+    if (url.protocol !== "http:") return false;
+    // The page can be opened by loopback or by this machine's private address (WSL mirrored networking).
+    const host = url.hostname;
+    return (
+      ["localhost", "127.0.0.1", "[::1]"].includes(host) ||
+      /^(10|127)\.\d+\.\d+\.\d+$/.test(host) ||
+      /^192\.168\.\d+\.\d+$/.test(host) ||
+      /^172\.(1[6-9]|2\d|3[01])\.\d+\.\d+$/.test(host)
+    );
   } catch {
     return false;
   }

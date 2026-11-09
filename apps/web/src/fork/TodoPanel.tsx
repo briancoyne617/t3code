@@ -278,9 +278,9 @@ export function TodoPanel(props: {
 
       {error && !ready ? <p className="text-xs text-destructive">{error}</p> : null}
       <ul className="flex max-h-[min(28rem,60vh)] flex-col overflow-y-auto">
-        {shown.length === 0 ? (
+        {shown.length === 0 && (ready || !error) ? (
           <li className="py-3 text-center text-xs text-muted-foreground">
-            {view === "open" ? "Nothing to do here." : `No ${view} todos.`}
+            {!ready ? "Loading…" : view === "open" ? "Nothing to do here." : `No ${view} todos.`}
           </li>
         ) : null}
         {shown.map((todo) => {
