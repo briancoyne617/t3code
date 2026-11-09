@@ -2,6 +2,8 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   // Exported types are part of our contracts even before they have consumers.
   "rules": { "types": "off", "nsTypes": "off" },
+  // Fork: the composer shows fork/ForkContextWindowBar.tsx instead of upstream's round meter.
+  "ignoreIssues": { "apps/web/src/components/chat/ContextWindowMeter.tsx": ["exports"] },
   // These executables are supplied by the OS or installed separately from npm.
   "ignoreBinaries": ["eas", "file", "mkfifo", "pkill", "pkg-config", "plutil", "sips"],
   "workspaces": {

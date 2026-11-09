@@ -1,9 +1,11 @@
 {
   "AGENTS.md": 7,
   "apps/server/src/cli/server.ts": 4,
+  "knip.jsonc": 2,
   "apps/web/src/components/chat/ChatComposer.tsx": 2,
   "apps/web/src/components/chat/ChatHeader.tsx": 2,
-  "apps/web/src/components/chat/ComposerControlsBar.tsx": 8,
+  "apps/web/src/components/chat/ComposerControlsBar.tsx": 13,
+  "apps/web/src/components/chat/ComposerFooterControls.tsx": 5,
   "apps/web/src/components/chat/ComposerModelEffort.tsx": 8,
   "apps/web/src/components/chat/restingComposerControlsMeasurement.ts": 8,
   "apps/web/src/components/chat/useComposerSend.ts": 26,

@@ -153,6 +153,9 @@ export function ComposerControlsBar(props: {
     measuredHiddenBlockCount,
   });
   const controlSize = composerControlsCollapsed ? "xs" : "sm";
+  // In the expanded footer the model and effort slider sit last, so the context bar beside the
+  // send button lands right of the effort slider; mode and overflow move to their left.
+  const leadOtherControls = !composerControlsCollapsed;
   const traitsInput = resolveComposerTraitsInput({
     provider: selectedProvider,
     instanceId: selectedInstanceId,
@@ -290,6 +293,7 @@ export function ComposerControlsBar(props: {
               inert={hidden || undefined}
               className={cn(
                 "flex w-max min-w-max shrink-0 items-center gap-1",
+                leadOtherControls && "-order-1",
                 hidden && "pointer-events-none invisible absolute",
                 index >= restingBlockDefs.length - iconOnlyBlockCount &&
                   "[&_[data-composer-control-label]]:pointer-events-none [&_[data-composer-control-label]]:invisible [&_[data-composer-control-label]]:absolute [&_[data-composer-control-label]]:w-max [&_[data-composer-control-label]]:max-w-none [&_[data-composer-control-compact-icon]]:[visibility:inherit] [&_[data-composer-control-compact-icon]]:relative",
@@ -305,6 +309,7 @@ export function ComposerControlsBar(props: {
           inert={hiddenRestingBlockIds.length === 0 || undefined}
           className={cn(
             "min-w-0 shrink-0",
+            leadOtherControls && "-order-1",
             hiddenRestingBlockIds.length === 0 && "pointer-events-none invisible absolute",
           )}
         >
