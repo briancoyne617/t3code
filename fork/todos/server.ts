@@ -53,6 +53,21 @@ const { values } = NodeUtil.parseArgs({
   },
 });
 const dataFile = values.data ?? NodePath.join(process.env.HOME ?? ".", ".t3-fork", "todos.json");
+// UI elements hidden with Alt+right-click (apps/web/src/fork/hiddenUi.ts); the page owns the rule shape.
+const hiddenFile = NodePath.join(NodePath.dirname(dataFile), "hidden-ui.json");
+function readHidden(): unknown[] {
+  try {
+    const rules: unknown = JSON.parse(NodeFS.readFileSync(hiddenFile, "utf8"));
+    return Array.isArray(rules) ? rules : [];
+  } catch {
+    return [];
+  }
+}
+function writeHidden(rules: unknown[]): void {
+  NodeFS.writeFileSync(`${hiddenFile}.tmp`, `${JSON.stringify(rules, null, 2)}\n`);
+  NodeFS.renameSync(`${hiddenFile}.tmp`, hiddenFile);
+}
+
 const stateDb =
   values["stable-db"] ??
   NodePath.join(process.env.HOME ?? ".", ".t3-stable", "userdata", "statev2.sqlite");
@@ -385,6 +400,15 @@ async function handle(req: NodeHttp.IncomingMessage, res: NodeHttp.ServerRespons
   if (method === "GET" && path === "/api/health") return json(200, { ok: true, revision });
   if (method === "GET" && path === "/api/todos") return json(200, snapshot());
   if (method === "GET" && path === "/api/waits") return json(200, { waits: readWaits(stateDb) });
+  if (path === "/api/hidden") {
+    if (method === "GET") return json(200, { rules: readHidden() });
+    if (method === "POST") {
+      const body = await readBody<{ rules?: unknown }>(req);
+      if (!Array.isArray(body.rules)) throw new HttpError(400, "rules must be an array");
+      writeHidden(body.rules);
+      return json(200, { rules: body.rules });
+    }
+  }
   if (path === "/api/todoist/config" && method === "POST") {
     const body = await readBody<{ defaultThreadId?: string | null; pins?: Record<string, string> }>(
       req,

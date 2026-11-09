@@ -1,10 +1,14 @@
 import { Button } from "../components/ui/button";
 import { ForkShortcutsDialog } from "./ForkShortcutsDialog";
 import { ForkUpdatesDialog } from "./ForkUpdatesDialog";
+import { installHiddenUi } from "./hiddenUi";
+import { installHidePicker } from "./hidePicker";
 import { installNoAutofill } from "./noAutofill";
 import { TodoList } from "./TodoList";
 
 installNoAutofill();
+installHiddenUi();
+installHidePicker();
 
 const matchesAltG = (event: KeyboardEvent) =>
   event.altKey && !event.shiftKey && !event.ctrlKey && !event.metaKey && event.code === "KeyG";
