@@ -1,4 +1,5 @@
 import { ThreadHoverCard, ThreadHoverCardPopup } from "../ThreadHoverCard";
+import { ForkWaitBadge } from "../../fork/ForkWaitBadge";
 import { ThreadTerminalStatusButton } from "../ThreadStatusIndicators";
 import { discardComposerDraft } from "../../lib/discardComposerDraft";
 import { requestCustomSnooze } from "../CustomSnoozeDialog";
@@ -527,9 +528,25 @@ const TOP_STATUS_ICONS = {
   woke: AlarmClockIcon,
 } as const;
 
-function TopStatusIcon(props: { icon: keyof typeof TOP_STATUS_ICONS; className: string }) {
+function TopStatusIcon(props: {
+  icon: keyof typeof TOP_STATUS_ICONS;
+  className: string;
+  threadId: string;
+  environmentId: EnvironmentId;
+}) {
   const Icon = TOP_STATUS_ICONS[props.icon];
-  return <Icon aria-hidden className={cn("shrink-0", props.className)} />;
+  const fallback = <Icon aria-hidden className={cn("shrink-0", props.className)} />;
+  return props.icon === "working" || props.icon === "waiting" ? (
+    <ForkWaitBadge
+      threadId={props.threadId}
+      environmentId={props.environmentId}
+      variant="pie"
+      className={props.className}
+      fallback={fallback}
+    />
+  ) : (
+    fallback
+  );
 }
 
 type SidebarThreadRowProps = {
@@ -1304,7 +1321,12 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
                           topStatus.className,
                         )}
                       >
-                        <TopStatusIcon icon={topStatus.icon} className="size-3" />
+                        <TopStatusIcon
+                          icon={topStatus.icon}
+                          className="size-3"
+                          threadId={thread.id}
+                          environmentId={thread.environmentId}
+                        />
                         {topStatus.label}
                       </span>
                     ) : (
@@ -1491,7 +1513,12 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
                             topStatus.className,
                           )}
                         >
-                          <TopStatusIcon icon={topStatus.icon} className="size-4" />
+                          <TopStatusIcon
+                            icon={topStatus.icon}
+                            className="size-4"
+                            threadId={thread.id}
+                            environmentId={thread.environmentId}
+                          />
                           {/* Not a live region: a collapsed sidebar is inert, so
                             BackgroundThreadAnnouncer and the open thread's
                             timeline speak status changes instead. */}
