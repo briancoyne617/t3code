@@ -8,6 +8,7 @@
   "apps/web/src/components/chat/restingComposerControlsMeasurement.ts": 8,
   "apps/web/src/components/chat/useComposerSend.ts": 26,
   "apps/web/src/components/ComposerPromptEditorTiptap.tsx": 2,
+  "apps/web/src/components/settings/AppearanceSettingsPanel.tsx": 2,
   "apps/web/src/components/Sidebar.tsx": 2,
   "apps/web/src/components/sidebar/SidebarChrome.tsx": 4,
   "apps/web/src/components/sidebar/SidebarThreadRow.tsx": 35,
