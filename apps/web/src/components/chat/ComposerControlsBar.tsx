@@ -29,6 +29,7 @@ import {
 } from "./ComposerModelEffort";
 import type { useComposerProviderModel } from "./useComposerProviderModel";
 import { resolveComposerControlsOwnership } from "./composerControlsOwnership";
+import { ForkComposerEffortSlider } from "./ForkComposerEffortSlider";
 
 /**
  * The composer footer controls: the model picker (which also holds effort, speed and
@@ -165,7 +166,7 @@ export function ComposerControlsBar(props: {
     onPromptEdit,
     planModeEnabled,
   });
-  const effort = describeComposerEffort(traitsInput, props.effortDisplay, controlSize);
+  const effort = describeComposerEffort(traitsInput, props.effortDisplay, controlSize, true);
   const restingBlockDefs = showModeBlock
     ? [
         {
@@ -269,6 +270,11 @@ export function ComposerControlsBar(props: {
   ) : (
     <>
       {composerModelPicker}
+      <ForkComposerEffortSlider
+        traits={traitsInput}
+        size={controlSize}
+        disabled={providerCatalogPending || isSendBusy}
+      />
 
       <>
         {restingBlockDefs.map((def, index) => {
