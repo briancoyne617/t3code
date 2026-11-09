@@ -45,6 +45,7 @@ import { Button } from "~/components/ui/button";
 import { PanelTabCloseButton } from "~/components/ui/panel-tab-close-button";
 import { stackedThreadToast, toastManager } from "~/components/ui/toast";
 import { readTextFromClipboard, writeTextToClipboard } from "~/hooks/useCopyToClipboard";
+import { copyKeyWhileMenuOpen } from "~/fork/copyKeyWhileMenuOpen";
 import { cn } from "~/lib/utils";
 import { type TerminalContextSelection } from "~/lib/terminalContext";
 import {
@@ -915,12 +916,17 @@ function TerminalSessionViewport({
         }
         const requestId = ++selectionActionRequestIdRef.current;
         openSelectionMenuRequestIdRef.current = requestId;
+        const stopCopyKey = copyKeyWhileMenuOpen(() => {
+          void copySelection(nextAction.clipboardText, requestId);
+          void localApi.contextMenu.close();
+        });
         const clicked = await localApi.contextMenu
           .show(
             terminalSelectionMenuItems({ canAddToChat: canAddSelectionToChat() }),
             nextAction.position,
           )
           .finally(() => {
+            stopCopyKey();
             if (openSelectionMenuRequestIdRef.current === requestId) {
               openSelectionMenuRequestIdRef.current = null;
             }
