@@ -85,6 +85,7 @@ export function describeComposerEffort(
   traits: TraitsSelectionInput | null,
   effortDisplay: EffortDisplay,
   size: ComposerControlSize,
+  hideReasoning = false,
 ): { suffix: ReactNode; detail: string | null } {
   if (!traits) return { suffix: null, detail: null };
   const visibility = getTraitsSectionVisibility(traits);
@@ -135,7 +136,8 @@ export function describeComposerEffort(
       modelSelection,
       traits.reportedModelSelection,
     );
-  if (!word && !glyph && !fast && !contextWindow) return { suffix: null, detail: display.label };
+  if ((hideReasoning || (!word && !glyph)) && !fast && !contextWindow)
+    return { suffix: null, detail: display.label };
   return {
     detail: display.label,
     suffix: (
@@ -146,11 +148,11 @@ export function describeComposerEffort(
           size === "sm" && "-ms-0.5",
         )}
       >
-        {word ? (
+        {!hideReasoning && word ? (
           <span data-composer-control-label className="max-w-24 truncate">
             {word}
           </span>
-        ) : glyph ? (
+        ) : !hideReasoning && glyph ? (
           <EffortGlyph count={glyph.count} filled={glyph.filled} size={size} />
         ) : null}
         {fast ? <FastBolt ultra={display.speedLabel === "Ultrafast"} /> : null}
