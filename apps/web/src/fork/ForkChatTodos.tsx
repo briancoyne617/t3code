@@ -53,7 +53,11 @@ function ComposerCorner(props: { threadRef: ScopedThreadRef }) {
         compact
         icon={<ListTodoIcon aria-hidden="true" />}
       />
-      <ForkWaitBadge threadId={props.threadRef.threadId} className="px-0.5" />
+      <ForkWaitBadge
+        threadId={props.threadRef.threadId}
+        environmentId={props.threadRef.environmentId}
+        className="px-0.5"
+      />
     </div>
   );
 }
