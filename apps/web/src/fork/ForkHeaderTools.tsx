@@ -1,6 +1,6 @@
 import { Button } from "../components/ui/button";
 import { ForkShortcutsDialog } from "./ForkShortcutsDialog";
-import { ForkUpdatesDialog } from "./ForkUpdatesDialog";
+import { ForkDevMenu } from "./ForkDevMenu";
 import { installHiddenUi } from "./hiddenUi";
 import { installHidePicker } from "./hidePicker";
 import { installNoAutofill } from "./noAutofill";
@@ -13,10 +13,11 @@ installHidePicker();
 const matchesAltG = (event: KeyboardEvent) =>
   event.altKey && !event.shiftKey && !event.ctrlKey && !event.metaKey && event.code === "KeyG";
 
-/** Top-left of the sidebar: the general (cross-project) todo list and the ? shortcuts screen. */
+/** Top-left of the sidebar: the dev-tools hammer, the general todo list and the ? shortcuts screen. */
 export function ForkHeaderTools() {
   return (
     <div className="ml-1 hidden items-center md:flex">
+      <ForkDevMenu />
       <TodoList
         scope={{ kind: "general" }}
         title="General todos"
@@ -26,7 +27,6 @@ export function ForkHeaderTools() {
         triggerLabel="Todo"
         side="bottom"
       />
-      <ForkUpdatesDialog />
       <ForkShortcutsDialog />
     </div>
   );

@@ -1,4 +1,3 @@
-import { scopeThreadRef } from "@t3tools/client-runtime/environment";
 import { useState } from "react";
 
 import { Badge } from "../components/ui/badge";
@@ -10,11 +9,9 @@ import {
   DialogPopup,
   DialogTitle,
 } from "../components/ui/dialog";
-import { useThreadTerminalActions } from "../components/terminal/useThreadTerminalActions";
 import { toastManager } from "../components/ui/toast";
 import { requestConfirmDialog } from "../confirmDialog";
-import { useHandleNewThread } from "../hooks/useHandleNewThread";
-import { useTerminalUiStateStore } from "../terminalUiStateStore";
+import { useForkTerminalCommand } from "./useForkTerminalCommand";
 
 interface PendingBranch {
   branch: string;
@@ -36,24 +33,21 @@ interface PendingReport {
 
 // Written every 2 minutes by `fork pending --write` and served next to the UI.
 const PENDING_URL = "/fork-pending.json";
-const DEV_WORKTREE = "/home/brian/ide/t3code-dev";
 
 function minutesAgo(iso: string): string {
   const minutes = Math.round((Date.parse(new Date().toISOString()) - Date.parse(iso)) / 60_000);
   return minutes <= 0 ? "just now" : `${minutes} min ago`;
 }
 
-/** "Dev ↔ Stable": what the dev branches have that stable lacks, and a Pull in button per branch. */
-export function ForkUpdatesDialog() {
+/**
+ * "Dev ↔ Stable": what the dev branches have that stable lacks, and a Pull in button per branch.
+ * Returns the dialog to render outside any menu, and `openDialog` to call from a click.
+ */
+export function useForkUpdatesDialog() {
   const [open, setOpen] = useState(false);
   const [report, setReport] = useState<PendingReport | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const { activeThread, activeDraftThread } = useHandleNewThread();
-  const thread = activeThread ?? activeDraftThread;
-  const threadId = activeThread?.id ?? activeDraftThread?.threadId ?? null;
-  const threadRef = thread && threadId ? scopeThreadRef(thread.environmentId, threadId) : null;
-  const terminal = useThreadTerminalActions(threadRef);
-  const newTerminal = useTerminalUiStateStore((store) => store.newTerminal);
+  const forkCommand = useForkTerminalCommand();
 
   const load = async () => {
     setError(null);
@@ -69,7 +63,7 @@ export function ForkUpdatesDialog() {
   };
 
   const pull = async (branch: PendingBranch) => {
-    if (!threadRef) {
+    if (!forkCommand.canRun) {
       toastManager.add({
         type: "error",
         title: "Open any thread first; the pull runs in its terminal",
@@ -81,21 +75,7 @@ export function ForkUpdatesDialog() {
       : `Pull ${branch.branch} into stable? It only touches ${branch.areas.join(", ")}: no restart, nothing is interrupted. Reload the tab when it finishes.`;
     const confirmed = await requestConfirmDialog(message);
     if (confirmed !== true) return;
-    const launched = terminal.launchTerminal({
-      place: (terminalId) => newTerminal(threadRef, terminalId),
-      location: { cwd: DEV_WORKTREE, worktreePath: null },
-      size: { cols: 120, rows: 30 },
-    });
-    if (!launched) return;
-    const opened = await launched.result;
-    if (opened._tag === "Failure") {
-      toastManager.add({ type: "error", title: "Could not open a terminal for the pull" });
-      return;
-    }
-    await terminal.writeToTerminal(
-      launched.terminalId,
-      `./fork/bin/fork promote ${branch.branch}\r`,
-    );
+    if (!(await forkCommand.run(`./fork/bin/fork promote ${branch.branch}`))) return;
     setOpen(false);
     toastManager.add({
       type: "info",
@@ -103,24 +83,13 @@ export function ForkUpdatesDialog() {
     });
   };
 
-  return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next);
-        if (next) void load();
-      }}
-    >
-      <Button
-        variant="ghost"
-        size="compact"
-        onClick={() => {
-          setOpen(true);
-          void load();
-        }}
-      >
-        Dev↔Stable
-      </Button>
+  const openDialog = () => {
+    setOpen(true);
+    void load();
+  };
+
+  const dialog = (
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogPopup className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Dev ↔ Stable</DialogTitle>
@@ -182,4 +151,6 @@ export function ForkUpdatesDialog() {
       </DialogPopup>
     </Dialog>
   );
+
+  return { openDialog, dialog };
 }
