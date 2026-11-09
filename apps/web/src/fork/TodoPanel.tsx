@@ -20,6 +20,7 @@ import { useNowMinute } from "../hooks/useNowMinute";
 import { cn } from "../lib/utils";
 import { useThreadShells } from "../state/entities";
 import { buildThreadRouteParams } from "../threadRoutes";
+import { NO_AUTOFILL } from "./noAutofill";
 import { compareTodos, describeDue, nextRecurrence, parseTodoInput, type Todo } from "./todoModel";
 import { addTodo, patchTodo, redoTodo, undoTodo, useTodos } from "./todoStore";
 
@@ -225,6 +226,7 @@ export function TodoPanel(props: {
 
       <div className="flex flex-col gap-1">
         <Input
+          {...NO_AUTOFILL}
           autoFocus
           value={draft}
           placeholder="Add a todo… e.g. “Fix login bug tomorrow 3pm p1 @web”"
@@ -316,6 +318,7 @@ export function TodoPanel(props: {
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                 {editing?.id === todo.id ? (
                   <Input
+                    {...NO_AUTOFILL}
                     autoFocus
                     size="sm"
                     value={editing.value}

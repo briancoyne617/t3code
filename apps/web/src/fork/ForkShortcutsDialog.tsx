@@ -26,6 +26,7 @@ import { primaryEnvironmentIdAtom } from "../state/primaryEnvironment";
 import { primaryServerConfigAtom, serverEnvironment } from "../state/server";
 import { useAtomCommand } from "../state/use-atom-command";
 import { classifyShortcut, suggestReplacement } from "./browserShortcuts";
+import { NO_AUTOFILL } from "./noAutofill";
 import { isTypingTarget } from "./TodoList";
 
 const FORK_SHORTCUTS = [
@@ -208,6 +209,7 @@ export function ForkShortcutsDialog() {
             </div>
           ) : null}
           <Input
+            {...NO_AUTOFILL}
             autoFocus
             value={query}
             placeholder="Type to filter…"
@@ -253,6 +255,7 @@ export function ForkShortcutsDialog() {
                   {recording === row.id ? (
                     <div className="w-56">
                       <Input
+                        {...NO_AUTOFILL}
                         autoFocus
                         size="sm"
                         placeholder="press keys, or type e.g. ctrl+alt+n"
