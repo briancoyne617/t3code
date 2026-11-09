@@ -13,6 +13,7 @@
   "apps/web/src/components/Sidebar.tsx": 2,
   "apps/web/src/components/sidebar/SidebarChrome.tsx": 4,
   "apps/web/src/components/sidebar/SidebarThreadRow.tsx": 35,
+  "apps/web/src/components/ThreadTerminalDrawer.tsx": 6,
   "apps/web/src/terminal/ghostty/surface.test.ts": 18,
   "apps/web/src/terminal/ghostty/surface.ts": 3,
   "knip.jsonc": 2,
