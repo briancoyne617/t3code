@@ -210,6 +210,7 @@ export function ForkShortcutsDialog() {
           ) : null}
           <Input
             {...NO_AUTOFILL}
+            type="search"
             autoFocus
             value={query}
             placeholder="Type to filter…"
@@ -256,6 +257,7 @@ export function ForkShortcutsDialog() {
                     <div className="w-56">
                       <Input
                         {...NO_AUTOFILL}
+                        type="search"
                         autoFocus
                         size="sm"
                         placeholder="press keys, or type e.g. ctrl+alt+n"

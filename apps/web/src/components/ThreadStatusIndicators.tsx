@@ -747,8 +747,8 @@ export function ThreadRowLeadingStatus({ thread }: { thread: SidebarThreadSummar
           aria-label={`${changeRequestTerminologyForUrl(pendingLink.url).shortLabel} #${pendingLink.number}, status pending`}
         />
       ) : null}
+      <ForkWaitBadge threadId={thread.id} variant="pie" />
       {threadStatus ? <ThreadStatusLabel status={threadStatus} /> : null}
-      <ForkWaitBadge threadId={thread.id} />
     </span>
   );
 }
