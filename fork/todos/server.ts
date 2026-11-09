@@ -20,6 +20,7 @@ import {
   type TodoistState,
   tokenFile,
 } from "./todoist.ts";
+import { readWaits } from "./waits.ts";
 
 interface Change {
   before: Todo | null;
@@ -52,6 +53,9 @@ const { values } = NodeUtil.parseArgs({
   },
 });
 const dataFile = values.data ?? NodePath.join(process.env.HOME ?? ".", ".t3-fork", "todos.json");
+const stateDb =
+  values["stable-db"] ??
+  NodePath.join(process.env.HOME ?? ".", ".t3-stable", "userdata", "statev2.sqlite");
 
 function load(): Store {
   try {
@@ -246,9 +250,7 @@ function todoistHost(): TodoistHost {
       persist();
     },
     newTodo,
-    stableDb:
-      values["stable-db"] ??
-      NodePath.join(process.env.HOME ?? ".", ".t3-stable", "userdata", "statev2.sqlite"),
+    stableDb: stateDb,
   };
 }
 
@@ -374,6 +376,7 @@ async function handle(req: NodeHttp.IncomingMessage, res: NodeHttp.ServerRespons
 
   if (method === "GET" && path === "/api/health") return json(200, { ok: true, revision });
   if (method === "GET" && path === "/api/todos") return json(200, snapshot());
+  if (method === "GET" && path === "/api/waits") return json(200, { waits: readWaits(stateDb) });
   if (path === "/api/todoist/config" && method === "POST") {
     const body = await readBody<{ defaultThreadId?: string | null; pins?: Record<string, string> }>(
       req,

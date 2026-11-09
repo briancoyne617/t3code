@@ -201,6 +201,8 @@ export async function dev(cfg: ForkConfig, extraArgs: ReadonlyArray<string>): Pr
           "3875",
           "--data",
           NodePath.join(cfg.devHome, "fork-todos.json"),
+          "--stable-db",
+          NodePath.join(cfg.devHome, "userdata", "statev2.sqlite"),
         ],
         { stdio: "ignore" },
       );

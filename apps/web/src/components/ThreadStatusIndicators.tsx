@@ -153,6 +153,7 @@ export {
   resolveThreadPullRequestBadge,
   type ThreadPullRequestBadge,
 } from "@t3tools/client-runtime/thread-pull-requests";
+import { ForkWaitBadge } from "../fork/ForkWaitBadge";
 
 export interface ThreadPullRequestBadgePresentation {
   readonly Icon: PullRequestGlyphIcon;
@@ -747,6 +748,7 @@ export function ThreadRowLeadingStatus({ thread }: { thread: SidebarThreadSummar
         />
       ) : null}
       {threadStatus ? <ThreadStatusLabel status={threadStatus} /> : null}
+      <ForkWaitBadge threadId={thread.id} />
     </span>
   );
 }

@@ -3227,7 +3227,6 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
           pulseKey={stashPulseKey}
           onToggleMenu={toggleStashMenuStable}
         />
-        <ForkChatTodos threadRef={routeThreadRef} />
       </ComposerBanner.Dock>
       <div className="relative">
         <ComposerSurface.Main
@@ -3312,6 +3311,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                 isComposerCollapsedMobile && "hidden",
               )}
             >
+              <ForkChatTodos threadRef={routeThreadRef} />
               {isStashMenuOpen && !composerMenuOpen && (
                 <ComposerCommandMenuLayer anchor={composerMenuAnchor}>
                   <ComposerStashMenu

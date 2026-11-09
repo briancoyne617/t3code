@@ -33,6 +33,8 @@ function TodoListButton(props: {
   align?: "start" | "end";
   /** Shown before the label, e.g. a composer-tab icon. */
   icon?: ReactElement;
+  /** Icon plus the bare count, for tight spots like the composer corner. */
+  compact?: boolean;
 }) {
   const { matchesHotkey } = props;
   const [open, setOpen] = useState(false);
@@ -54,7 +56,7 @@ function TodoListButton(props: {
       <PopoverTrigger render={props.trigger}>
         {props.icon ?? null}
         {props.icon ? (
-          <span>Todos{count > 0 ? ` ${count}` : ""}</span>
+          <span>{props.compact ? count || "" : `Todos${count > 0 ? ` ${count}` : ""}`}</span>
         ) : (
           <>
             {props.triggerLabel}

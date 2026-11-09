@@ -24,6 +24,9 @@ function scan(root: ParentNode) {
   for (const element of root.querySelectorAll(FIELDS)) mark(element);
 }
 
+/** Spread onto fork inputs so the marks exist before an autoFocus fires (the observer runs a tick late). */
+export const NO_AUTOFILL = Object.fromEntries([...MARKS, ["autoComplete", "off"]]);
+
 let installed = false;
 
 /** Mark every current and future text field. Safe to call more than once. */
@@ -31,6 +34,14 @@ export function installNoAutofill(): void {
   if (installed || typeof document === "undefined") return;
   installed = true;
   scan(document);
+  // Capture phase runs before a password manager's own focus handler on the field.
+  document.addEventListener(
+    "focusin",
+    (event) => {
+      if (event.target instanceof Element && event.target.matches(FIELDS)) mark(event.target);
+    },
+    true,
+  );
   new MutationObserver((records) => {
     for (const record of records) {
       for (const node of record.addedNodes) if (node instanceof Element) scan(node);

@@ -4,7 +4,7 @@ import { toastManager } from "../components/ui/toast";
 import type { Todo } from "./todoModel";
 
 // The fork todo service (fork/todos/server.ts). Stable's page (port 3773) uses 3775; dev uses 3875.
-function serviceUrl(): string {
+export function serviceUrl(): string {
   const port = window.location.port === "3773" ? 3775 : 3875;
   return `http://${window.location.hostname}:${port}/api`;
 }
