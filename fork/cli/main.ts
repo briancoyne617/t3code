@@ -32,7 +32,7 @@ const HELP = `fork — tooling for the personal T3 Code fork (docs: fork/README.
   fork todo add "<text>" [--thread id] [--project id]
                                      add a todo (Todoist words: p1-p4, tomorrow, fri 3pm, every mon, @label);
                                      inside a T3 Code chat it lands on that chat's list
-  fork todo list [--all] | done|rm|restore <id> | undo | redo
+  fork todo list [--all] | dupes | done|rm|restore <id> | undo | redo
   fork setup                         one-time install: dirs, dev worktree, systemd service, t3 wrapper, keep-alive
   fork hooks [--check]               regenerate the fork's entries in t3.json and AGENTS.md
   fork footprint [--write]           check (or record) how much the fork edits upstream-owned files
