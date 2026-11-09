@@ -36,6 +36,11 @@ const FORK_SHORTCUTS = [
   { label: "Fork: this chat's todo list (composer tab, top right)", key: "alt+j" },
   { label: "Fork: undo the last todo change (outside text fields)", key: "ctrl+z" },
   { label: "Fork: redo a todo change", key: "ctrl+shift+z / ctrl+y" },
+  {
+    label:
+      "Fork: hide any part of the UI (↑/↓ bigger/smaller, Enter hides; undo in Settings → Appearance)",
+    key: "alt+right-click",
+  },
   { label: "File finder (VS Code's Ctrl+P)", key: "ctrl+p" },
   {
     label: "Command palette (VS Code's Ctrl+Shift+P; Firefox keeps that key, use F1 or Ctrl+K)",

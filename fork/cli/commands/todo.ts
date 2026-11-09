@@ -1,5 +1,6 @@
 import { ForkError } from "../lib/core.ts";
 import type { Todo } from "../../../apps/web/src/fork/todoModel.ts";
+import { findDuplicate } from "../../todos/todoist.ts";
 
 const BASE = process.env.T3_FORK_TODO_URL ?? "http://127.0.0.1:3775";
 
@@ -73,6 +74,20 @@ export async function todoCommand(
       );
       if (options.json) console.log(JSON.stringify(shown, null, 2));
       else console.log(shown.map(line).join("\n") || "(no todos)");
+      return;
+    }
+    case "dupes": {
+      // Likely duplicates among open todos, across every list; nothing changes until you act on them.
+      const { todos } = await call<{ todos: Todo[] }>("GET", "/todos");
+      const open = todos.filter((todo) => todo.status === "open");
+      const seen = new Set<string>();
+      for (const [index, todo] of open.entries()) {
+        const twin = findDuplicate(todo.text, open.slice(index + 1));
+        if (!twin || seen.has(twin.id)) continue;
+        seen.add(twin.id);
+        console.log(`${line(todo)}\n  ≈ ${line(twin)}\n`);
+      }
+      if (seen.size === 0) console.log("(no likely duplicates)");
       return;
     }
     case "done":
