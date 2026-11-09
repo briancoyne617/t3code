@@ -31,6 +31,70 @@ function limitMs(input: Input): number | null {
   return num("timeout_ms") ?? num("timeoutMs") ?? num("timeout");
 }
 
+// A plain "sleep 120" (optionally followed by more commands) waits a known time; a sleep inside a loop does not.
+const PLAIN_SLEEP = /^\s*sleep\s+(\d+(?:\.\d+)?)([smhd]?)\s*(?:$|&&|;|\|\|)/;
+const UNIT_MS: Record<string, number> = {
+  "": 1000,
+  s: 1000,
+  m: 60_000,
+  h: 3_600_000,
+  d: 86_400_000,
+};
+
+function sleepMs(command: string): number | null {
+  const match = PLAIN_SLEEP.exec(command);
+  return match ? Number(match[1]) * UNIT_MS[match[2] ?? ""]! : null;
+}
+
+interface PendingTask {
+  taskId: string;
+  kind: string;
+  description?: string;
+}
+
+/** Background tasks a chat's provider still reports as running ("Waiting" in the sidebar). */
+function pendingTaskWaits(db: NodeSqlite.DatabaseSync): ThreadWait[] {
+  const threads = db
+    .prepare(
+      `select thread_id, json_extract(payload_json, '$.pendingBackgroundTasks') tasks
+       from orchestration_v2_projection_provider_threads
+       where json_array_length(json_extract(payload_json, '$.pendingBackgroundTasks')) > 0`,
+    )
+    .all() as unknown as Array<{ thread_id: string; tasks: string }>;
+  // The tool call that started the task names its ID in its output.
+  const starter = db.prepare(
+    `select payload_json from orchestration_v2_projection_turn_items
+     where thread_id = ? and type in ('command_execution', 'dynamic_tool') and instr(payload_json, ?) > 0
+     order by ordinal limit 1`,
+  );
+  const waits: ThreadWait[] = [];
+  for (const thread of threads) {
+    for (const task of JSON.parse(thread.tasks) as PendingTask[]) {
+      if (task.kind === "subagent") continue;
+      const row = starter.get(thread.thread_id, task.taskId) as
+        | { payload_json: string }
+        | undefined;
+      if (!row) continue;
+      const item = JSON.parse(row.payload_json) as {
+        type: string;
+        startedAt?: string;
+        input?: unknown;
+      };
+      if (!item.startedAt) continue;
+      const limit =
+        typeof item.input === "string" ? sleepMs(item.input) : limitMs((item.input ?? {}) as Input);
+      waits.push({
+        threadId: thread.thread_id,
+        kind: task.kind === "monitor" ? "monitor" : (task.description ?? "background command"),
+        startedAt: item.startedAt,
+        deadline:
+          limit === null ? null : new Date(Date.parse(item.startedAt) + limit).toISOString(),
+      });
+    }
+  }
+  return waits;
+}
+
 interface Row {
   thread_id: string;
   run_id: string | null;
@@ -83,6 +147,12 @@ export function readWaits(dbPath: string, now = Date.now()): ThreadWait[] {
         startedAt,
         deadline: limit === null ? null : new Date(Date.parse(startedAt) + limit).toISOString(),
       });
+    }
+    for (const wait of pendingTaskWaits(db)) {
+      // One per chat: a wait with a known end beats one without.
+      const current = waits.get(wait.threadId);
+      if (!current || (current.deadline === null && wait.deadline !== null))
+        waits.set(wait.threadId, wait);
     }
     return [...waits.values()];
   } catch {

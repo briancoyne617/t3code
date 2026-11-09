@@ -1,6 +1,6 @@
-// Password managers (Bitwarden's inline menu, 1Password, LastPass) pop up on T3 Code's text fields.
-// Every field here is a prompt, search or setting, never a login, so mark each one as "not for autofill".
-// Password fields (the pairing screen) are left alone so the manager can still fill those.
+// Password managers (Bitwarden, 1Password, LastPass) pop up on T3 Code's fields; none of them is a login.
+// Mark every field "not for autofill", leaving password fields (pairing) alone. Bitwarden honours
+// data-bwignore only behind an opt-in setting but always skips type="search", so text inputs become search.
 
 const MARKS: ReadonlyArray<readonly [string, string]> = [
   ["data-bwignore", "true"], // Bitwarden
@@ -15,8 +15,10 @@ function mark(element: Element) {
   for (const [name, value] of MARKS) {
     if (element.getAttribute(name) !== value) element.setAttribute(name, value);
   }
-  if (element instanceof HTMLInputElement && !element.getAttribute("autocomplete"))
-    element.setAttribute("autocomplete", "off");
+  if (!(element instanceof HTMLInputElement)) return;
+  if (!element.getAttribute("autocomplete")) element.setAttribute("autocomplete", "off");
+  const type = element.getAttribute("type");
+  if (type === null || type === "text") element.setAttribute("type", "search");
 }
 
 function scan(root: ParentNode) {
@@ -33,6 +35,10 @@ let installed = false;
 export function installNoAutofill(): void {
   if (installed || typeof document === "undefined") return;
   installed = true;
+  const style = document.createElement("style");
+  style.textContent =
+    "input[type=search]::-webkit-search-cancel-button, input[type=search]::-webkit-search-decoration { appearance: none; }";
+  document.head.append(style);
   scan(document);
   // Capture phase runs before a password manager's own focus handler on the field.
   document.addEventListener(

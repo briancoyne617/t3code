@@ -227,6 +227,7 @@ export function TodoPanel(props: {
       <div className="flex flex-col gap-1">
         <Input
           {...NO_AUTOFILL}
+          type="search"
           autoFocus
           value={draft}
           placeholder="Add a todo… e.g. “Fix login bug tomorrow 3pm p1 @web”"
@@ -319,6 +320,7 @@ export function TodoPanel(props: {
                 {editing?.id === todo.id ? (
                   <Input
                     {...NO_AUTOFILL}
+                    type="search"
                     autoFocus
                     size="sm"
                     value={editing.value}

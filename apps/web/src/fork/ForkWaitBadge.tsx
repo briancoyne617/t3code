@@ -16,7 +16,17 @@ function clock(ms: number): string {
 }
 
 /** Live countdown for a chat waiting on a timer; overtime once it passes; counts up when there is no limit. */
-export function ForkWaitBadge(props: { threadId: string; className?: string }) {
+type BadgeProps = {
+  threadId: string;
+  className?: string;
+  /** "pie": a dot that fills as the wait runs out, standing in for the sidebar's status dot. */
+  variant?: "text" | "pie";
+};
+
+// The pie replaces upstream's status dot right after it, so the row keeps one dot.
+const PIE_CSS = "[data-fork-wait-pie] + [role=img] > .rounded-full:first-child { display: none; }";
+
+export function ForkWaitBadge(props: BadgeProps) {
   return (
     <RenderErrorBoundary fallback={null}>
       <WaitBadge {...props} />
@@ -24,7 +34,7 @@ export function ForkWaitBadge(props: { threadId: string; className?: string }) {
   );
 }
 
-function WaitBadge(props: { threadId: string; className?: string }) {
+function WaitBadge(props: BadgeProps) {
   const { waits, now } = useWaits();
   const wait = waits.get(props.threadId);
   if (!wait) return null;
@@ -40,6 +50,38 @@ function WaitBadge(props: { threadId: string; className?: string }) {
       ? `Waiting on ${wait.kind}, no time limit`
       : `Waiting on ${wait.kind} until ${new Date(deadline).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
   const Icon = left === null ? HourglassIcon : TimerIcon;
+  if (props.variant === "pie") {
+    if (deadline === null) return null;
+    const total = deadline - Date.parse(wait.startedAt);
+    const filled =
+      overtime || total <= 0 ? 1 : Math.min(1, (now - Date.parse(wait.startedAt)) / total);
+    return (
+      <>
+        <style>{PIE_CSS}</style>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <span
+                data-fork-wait-pie
+                role="img"
+                aria-label={`${title}, ${text}`}
+                className={cn(
+                  "inline-block size-2 shrink-0 rounded-full border border-current text-sidebar-muted-foreground",
+                  overtime && "text-warning",
+                )}
+                style={{
+                  background: `conic-gradient(currentColor ${filled}turn, transparent 0)`,
+                }}
+              />
+            }
+          />
+          <TooltipPopup side="top">
+            {title} ({overtime ? `${text} over` : `${text} left`})
+          </TooltipPopup>
+        </Tooltip>
+      </>
+    );
+  }
   return (
     <Tooltip>
       <TooltipTrigger
