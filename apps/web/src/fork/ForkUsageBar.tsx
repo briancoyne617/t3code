@@ -2,6 +2,7 @@ import { useAtomValue } from "@effect/atom-react";
 import {
   PROVIDER_DISPLAY_NAMES,
   type EnvironmentId,
+  type ServerProvider,
   type ServerProviderUsageWindow,
 } from "@t3tools/contracts";
 
@@ -30,6 +31,23 @@ function windowLabel(window: ServerProviderUsageWindow): string {
   return window.label;
 }
 
+type UsageProvider = Pick<ServerProvider, "enabled" | "driver" | "usageLimits">;
+
+const hasWindows = (provider: UsageProvider) => (provider.usageLimits?.windows.length ?? 0) > 0;
+
+/** Rows with numbers; a Codex/Claude connection without them only shows when no other of its kind has them. */
+export function visibleUsageRows<T extends UsageProvider>(providers: ReadonlyArray<T>): T[] {
+  return providers.filter(
+    (provider) =>
+      provider.enabled &&
+      (hasWindows(provider) ||
+        ((provider.driver === "codex" || provider.driver === "claudeAgent") &&
+          !providers.some(
+            (other) => other.enabled && other.driver === provider.driver && hasWindows(other),
+          ))),
+  );
+}
+
 /** Always-visible usage per provider: % used of each window and the time until it resets. */
 export function ForkUsageBar(props: { environmentId?: EnvironmentId; layout?: "header" } = {}) {
   const providers =
@@ -39,13 +57,7 @@ export function ForkUsageBar(props: { environmentId?: EnvironmentId; layout?: "h
         : serverEnvironment.providersValueAtom(props.environmentId),
     ) ?? [];
   const now = Date.parse(`${useNowMinute()}:00Z`);
-  const rows = providers.filter(
-    (provider) =>
-      provider.enabled &&
-      (provider.driver === "codex" ||
-        provider.driver === "claudeAgent" ||
-        (provider.usageLimits?.windows.length ?? 0) > 0),
-  );
+  const rows = visibleUsageRows(providers);
   if (rows.length === 0) return null;
   return (
     <div
