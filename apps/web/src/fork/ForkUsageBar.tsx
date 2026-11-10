@@ -64,7 +64,7 @@ export function ForkUsageBar(props: { environmentId?: EnvironmentId; layout?: "h
       aria-label="Provider usage limits"
       className={cn(
         "flex flex-col gap-0.5 text-2xs leading-tight tabular-nums",
-        props.layout === "header" ? "hidden max-w-[50%] shrink-0 sm:flex" : "px-3 pb-1",
+        props.layout === "header" ? "hidden min-w-0 shrink sm:flex" : "px-3 pb-1",
       )}
     >
       {rows.map((provider) => (
