@@ -45,7 +45,6 @@ import { Button } from "~/components/ui/button";
 import { PanelTabCloseButton } from "~/components/ui/panel-tab-close-button";
 import { stackedThreadToast, toastManager } from "~/components/ui/toast";
 import { readTextFromClipboard, writeTextToClipboard } from "~/hooks/useCopyToClipboard";
-import { copyKeyWhileMenuOpen } from "~/fork/copyKeyWhileMenuOpen";
 import { cn } from "~/lib/utils";
 import { type TerminalContextSelection } from "~/lib/terminalContext";
 import {
@@ -901,49 +900,6 @@ function TerminalSessionViewport({
         }
       };
 
-      const showSelectionAction = async (pointer: SelectionActionPoint | null) => {
-        if (!localApi) {
-          clearSelectionAction();
-          return;
-        }
-        if (openSelectionMenuRequestIdRef.current === selectionActionRequestIdRef.current) {
-          return;
-        }
-        const nextAction = readSelectionAction(pointer);
-        if (!nextAction) {
-          clearSelectionAction();
-          return;
-        }
-        const requestId = ++selectionActionRequestIdRef.current;
-        openSelectionMenuRequestIdRef.current = requestId;
-        const stopCopyKey = copyKeyWhileMenuOpen(() => {
-          void copySelection(nextAction.clipboardText, requestId);
-          void localApi.contextMenu.close();
-        });
-        const clicked = await localApi.contextMenu
-          .show(
-            terminalSelectionMenuItems({ canAddToChat: canAddSelectionToChat() }),
-            nextAction.position,
-          )
-          .finally(() => {
-            stopCopyKey();
-            if (openSelectionMenuRequestIdRef.current === requestId) {
-              openSelectionMenuRequestIdRef.current = null;
-            }
-          });
-        if (requestId !== selectionActionRequestIdRef.current || clicked === null) {
-          return;
-        }
-        switch (clicked) {
-          case "add-to-chat":
-            if (canAddSelectionToChat()) addSelectionToChat(nextAction.clipboardText);
-            return;
-          case "copy":
-            await copySelection(nextAction.clipboardText, requestId);
-            return;
-        }
-      };
-
       const sendTerminalInput = async (data: string, fallbackError: string) => {
         if (!hasTerminalWriteAccess()) return;
         const activeTerminal = terminalRef.current;
@@ -1073,9 +1029,8 @@ function TerminalSessionViewport({
 
       selectionActions = observeSelectionActions({
         element: mount,
-        onSelection: (pointer) => {
-          void showSelectionAction(pointer);
-        },
+        // Fork: no menu pops up on select; Ctrl+C copies and right-click still offers Add to chat.
+        onSelection: () => undefined,
         onDismiss: (reason) => dismissSelectionAction(reason === "interaction"),
       });
       setupCleanups.push(() => selectionActions?.dispose());
