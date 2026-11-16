@@ -46,7 +46,7 @@
   "apps/web/src/components/chat/useComposerSend.ts": 26,
   "apps/web/src/components/ChatView.tsx": 2,
   "apps/web/src/components/composerContextPresentation.tsx": 26,
-  "apps/web/src/components/ComposerPromptEditorTiptap.citationDraft.browser.test.tsx": 89,
+  "apps/web/src/components/ComposerPromptEditorTiptap.citationDraft.browser.test.tsx": 27,
   "apps/web/src/components/ComposerPromptEditorTiptap.tsx": 8,
   "apps/web/src/components/DiffPanel.tsx": 2,
   "apps/web/src/components/diffs/AnnotatableCodeView.tsx": 14,

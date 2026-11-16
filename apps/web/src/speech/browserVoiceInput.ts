@@ -28,8 +28,7 @@ export function createBrowserVoiceInputPlatform(input: {
     const recordingOptions = input.getTranscriptionOptions();
     const status = await runEnvironmentSpeech(getEnvironmentSpeechStatus(input.prepared), options);
     throwIfVoiceTranscriptionAborted(options.signal);
-    if (!status.supported)
-      throw new VoiceTranscriptionError({ code: "unavailable", message: status.reason });
+    if (!status.supported) throw new VoiceTranscriptionError("unavailable", status.reason);
     const language = status.languages
       ? effectiveSpeechLanguage(
           {
@@ -62,11 +61,11 @@ export function createBrowserVoiceInputPlatform(input: {
         return result.text;
       } catch (cause) {
         throwIfVoiceTranscriptionAborted(transcriptionSignal);
-        throw new VoiceTranscriptionError({
-          code: "transcription-failed",
-          message: "Voice transcription on this environment failed.",
-          cause,
-        });
+        throw new VoiceTranscriptionError(
+          "transcription-failed",
+          "Voice transcription on this environment failed.",
+          { cause },
+        );
       }
     };
     if (!status.supportsStreaming && !status.supportsBufferedStreaming) {
