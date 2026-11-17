@@ -26,7 +26,8 @@ function tone(percent: number): string {
 
 function windowLabel(window: ServerProviderUsageWindow): string {
   if (window.kind === "session") return "5h";
-  if (window.kind === "weekly") return "wk";
+  if (window.kind === "weekly")
+    return window.label === "Weekly" ? "wk" : window.label.replace(/^Weekly\s*·\s*/, "wk ");
   if (window.kind === "monthly") return "mo";
   return window.label;
 }
