@@ -26,13 +26,18 @@ function tone(percent: number): string {
 
 function windowLabel(window: ServerProviderUsageWindow): string {
   if (window.kind === "session") return "5h";
-  if (window.kind === "weekly")
-    return window.label === "Weekly" ? "wk" : window.label.replace(/^Weekly\s*·\s*/, "wk ");
+  if (window.kind === "weekly") return "wk";
   if (window.kind === "monthly") return "mo";
   return window.label;
 }
 
 type UsageProvider = Pick<ServerProvider, "enabled" | "driver" | "usageLimits">;
+
+/** Hides model-specific weekly limits (e.g. "Weekly · Fable"); the overall weekly limit stays. */
+const shownWindows = (provider: UsageProvider) =>
+  (provider.usageLimits?.windows ?? []).filter(
+    (window) => window.kind !== "weekly" || window.label === "Weekly",
+  );
 
 const hasWindows = (provider: UsageProvider) => (provider.usageLimits?.windows.length ?? 0) > 0;
 
@@ -75,7 +80,7 @@ export function ForkUsageBar(props: { environmentId?: EnvironmentId; layout?: "h
             {(provider.usageLimits?.windows.length ?? 0) === 0 ? (
               <span className="text-muted-foreground">limits unavailable</span>
             ) : null}
-            {provider.usageLimits?.windows.map((window) => (
+            {shownWindows(provider).map((window) => (
               <span
                 key={window.id}
                 className={tone(window.usedPercent)}
