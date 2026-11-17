@@ -3,6 +3,7 @@ import type { EnvironmentId } from "@t3tools/contracts";
 import { Button } from "../components/ui/button";
 import { ForkShortcutsDialog } from "./ForkShortcutsDialog";
 import { ForkDevMenu } from "./ForkDevMenu";
+import { ForkHostResources } from "./ForkHostResources";
 import { ForkUsageBar } from "./ForkUsageBar";
 import { installHiddenUi } from "./hiddenUi";
 import { installHidePicker } from "./hidePicker";
@@ -29,6 +30,7 @@ export function ForkHeaderTools() {
 export function ForkChatHeaderTools(props: { environmentId: EnvironmentId }) {
   return (
     <div className="ml-auto flex max-w-[60%] shrink-0 items-center gap-1">
+      <ForkHostResources environmentId={props.environmentId} />
       <ForkUsageBar layout="header" environmentId={props.environmentId} />
       <ForkDevMenu />
       <TodoList

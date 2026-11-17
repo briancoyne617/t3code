@@ -33,6 +33,12 @@ function windowLabel(window: ServerProviderUsageWindow): string {
 
 type UsageProvider = Pick<ServerProvider, "enabled" | "driver" | "usageLimits">;
 
+/** Hides model-specific weekly limits (e.g. "Weekly · Fable"); the overall weekly limit stays. */
+const shownWindows = (provider: UsageProvider) =>
+  (provider.usageLimits?.windows ?? []).filter(
+    (window) => window.kind !== "weekly" || window.label === "Weekly",
+  );
+
 const hasWindows = (provider: UsageProvider) => (provider.usageLimits?.windows.length ?? 0) > 0;
 
 /** Rows with numbers; a Codex/Claude connection without them only shows when no other of its kind has them. */
@@ -74,7 +80,7 @@ export function ForkUsageBar(props: { environmentId?: EnvironmentId; layout?: "h
             {(provider.usageLimits?.windows.length ?? 0) === 0 ? (
               <span className="text-muted-foreground">limits unavailable</span>
             ) : null}
-            {provider.usageLimits?.windows.map((window) => (
+            {shownWindows(provider).map((window) => (
               <span
                 key={window.id}
                 className={tone(window.usedPercent)}
