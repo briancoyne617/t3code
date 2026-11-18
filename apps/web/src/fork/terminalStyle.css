@@ -1,0 +1,275 @@
+/*
+ * Fork: terminal style. Makes T3 Code look like the Claude Code CLI running in a terminal.
+ * Everything is scoped to html[data-fork-terminal] (see terminalStyle.ts), so the stock
+ * look returns when it is off. Colours come from the active theme's variables, so it
+ * follows the Omarchy theme.
+ */
+
+/* ── Global: one monospace font, square corners, no shadows or glass ─────────────── */
+html[data-fork-terminal] {
+  --font-sans:
+    "JetBrainsMono Nerd Font", "JetBrains Mono", "SF Mono", Menlo, Consolas, "Liberation Mono",
+    monospace;
+  --font-mono: var(--font-sans);
+  --radius: 0px;
+  --control-radius: 0px;
+  --glass-blur: 0px;
+  /* The Omarchy theme's accent (its "focus" colour); --primary is a derived purple. */
+  --term-accent: var(--ring);
+  font-size: 15px;
+}
+
+html[data-fork-terminal] body,
+html[data-fork-terminal] body * {
+  font-family: var(--font-sans) !important;
+  letter-spacing: 0 !important;
+}
+
+html[data-fork-terminal] body *,
+html[data-fork-terminal] body *::before,
+html[data-fork-terminal] body *::after {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+/* Glassy/blurred surfaces become flat. */
+html[data-fork-terminal] body * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Keep genuinely round things round: avatars, status dots, switches, sliders. */
+html[data-fork-terminal] [data-slot="switch"],
+html[data-fork-terminal] [data-slot="switch"] *,
+html[data-fork-terminal] [data-slot="avatar"],
+html[data-fork-terminal] [data-slot="avatar"] *,
+html[data-fork-terminal] [role="slider"],
+html[data-fork-terminal] .size-1\.5.rounded-full,
+html[data-fork-terminal] .size-2.rounded-full {
+  border-radius: 9999px !important;
+}
+
+/* Headings: bold, body-sized, like terminal markdown. */
+html[data-fork-terminal] .chat-markdown :is(h1, h2, h3, h4, h5, h6) {
+  font-size: 1em !important;
+  font-weight: 700 !important;
+  line-height: inherit !important;
+  margin-top: 1em !important;
+  margin-bottom: 0.25em !important;
+}
+html[data-fork-terminal] .chat-markdown h1::before {
+  content: "# ";
+  color: var(--muted-foreground);
+}
+html[data-fork-terminal] .chat-markdown h2::before {
+  content: "## ";
+  color: var(--muted-foreground);
+}
+html[data-fork-terminal] .chat-markdown h3::before {
+  content: "### ";
+  color: var(--muted-foreground);
+}
+
+/* Inline code: no pill, just the accent colour. */
+html[data-fork-terminal] .chat-markdown :not(pre) > code {
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  color: var(--term-accent) !important;
+}
+
+/* Code blocks: a plain bordered region. */
+html[data-fork-terminal] .chat-markdown pre,
+html[data-fork-terminal] .chat-markdown [data-markdown-copy] {
+  background: transparent !important;
+}
+
+/* ── Timeline ──────────────────────────────────────────────────────────────────── */
+
+/* User messages: no bubble. A left-aligned "> " line, like the CLI prompt echo. */
+html[data-fork-terminal] [data-timeline-row-kind] .group.items-end {
+  align-items: stretch !important;
+}
+html[data-fork-terminal] [data-timeline-row-kind] .bg-message {
+  background: color-mix(in srgb, var(--foreground) 6%, transparent) !important;
+  color: var(--muted-foreground) !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  border: 0 !important;
+  padding-inline-start: 2.25ch !important;
+  position: relative;
+}
+html[data-fork-terminal] [data-timeline-row-kind] .bg-message::before {
+  content: ">";
+  position: absolute;
+  inset-inline-start: 0.6ch;
+  top: 0.5rem;
+  color: var(--muted-foreground);
+  font-weight: 700;
+}
+/* Its hover toolbar (time, edit, copy) sits on the left too. */
+html[data-fork-terminal] [data-timeline-row-kind] .group.items-end > .justify-end {
+  justify-content: flex-start !important;
+  max-width: 100% !important;
+}
+
+/* Assistant text: a "⏺" bullet in the gutter, as the CLI does for every reply. */
+html[data-fork-terminal] [data-timeline-row-kind="message"] .chat-markdown {
+  position: relative;
+  padding-inline-start: 2ch;
+  color: var(--foreground) !important;
+}
+html[data-fork-terminal]
+  [data-timeline-row-kind="message"]
+  [data-assistant-citation-source]
+  > .chat-markdown::before {
+  content: "●";
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0;
+  color: var(--foreground);
+}
+
+/* Work rows (tool calls, commands): "⎿" connectors instead of icons and rounded hover. */
+html[data-fork-terminal] [data-timeline-row-kind="work"] [data-v2-item-type] .text-secondary-label {
+  color: var(--muted-foreground) !important;
+}
+
+/* "Worked for …" folds and turn dividers: dim and flat, like the CLI status line. */
+html[data-fork-terminal] [data-timeline-row-kind="turn-fold"] {
+  border-bottom-style: dashed !important;
+}
+html[data-fork-terminal] [data-timeline-row-kind="turn-fold"] button {
+  color: var(--muted-foreground) !important;
+}
+html[data-fork-terminal] [data-timeline-row-kind="turn-fold"] button > span::before {
+  content: "✻ ";
+  color: var(--term-accent);
+}
+
+/* Event rows (model switch etc.): a plain dim line. */
+html[data-fork-terminal] [data-timeline-row-kind="event"] .bg-border\/70 {
+  background: transparent !important;
+  border-top: 1px dashed var(--border);
+  height: 0 !important;
+}
+
+/* ── Composer: a bordered box with a "> " prompt ──────────────────────────────── */
+html[data-fork-terminal] [data-chat-composer-main-surface] {
+  background: var(--background) !important;
+  border: 1px solid var(--border) !important;
+}
+html[data-fork-terminal] [data-chat-composer-main-surface]:focus-within {
+  border-color: var(--muted-foreground) !important;
+}
+/* The prompt marker sits beside the editor (and its placeholder), never over them. */
+html[data-fork-terminal] [data-chat-composer-body] > div.relative {
+  padding-inline-start: 2.5ch;
+}
+html[data-fork-terminal] [data-chat-composer-body] > div.relative::before {
+  content: ">";
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0;
+  line-height: inherit;
+  color: var(--foreground);
+  font-weight: 700;
+}
+
+/* Send button: a plain square. */
+html[data-fork-terminal] [data-chat-composer-main-surface] button[type="submit"] {
+  background: transparent !important;
+  border: 1px solid var(--border) !important;
+  color: var(--foreground) !important;
+}
+
+/* ── Sidebar, headers, panels, settings: flat terminal panes ─────────────────── */
+
+/* Selected / hovered sidebar rows: a solid bar on the left instead of a rounded pill. */
+html[data-fork-terminal] [data-sidebar-row] {
+  border-inline-start: 2px solid transparent;
+}
+html[data-fork-terminal] [data-sidebar-row][data-active="true"],
+html[data-fork-terminal] [data-sidebar-row][aria-current],
+html[data-fork-terminal] [data-sidebar-row][aria-selected="true"] {
+  border-inline-start-color: var(--term-accent);
+}
+
+/* Header and sidebar branding art off; titles plain. */
+html[data-fork-terminal] [data-slot="sidebar-header"] {
+  background-image: none !important;
+}
+
+/* Cards, popovers, menus, dialogs, settings sections: 1px border, flat fill. */
+html[data-fork-terminal]
+  :is(
+    [data-slot="card"],
+    [data-slot="popover-popup"],
+    [data-slot="menu-popup"],
+    [data-slot="dialog-popup"],
+    [data-slot="select-popup"],
+    [data-slot="tooltip-popup"]
+  ) {
+  border: 1px solid var(--border) !important;
+  background-image: none !important;
+}
+
+/* Buttons and inputs: square with thin borders, no gradients. */
+html[data-fork-terminal] :is(button, [role="button"], input, textarea, select) {
+  background-image: none !important;
+}
+
+/* Settings section titles: "── Title ──" rule, like a TUI pane header. */
+html[data-fork-terminal] [id^="settings-"] h2,
+html[data-fork-terminal] section > header h2 {
+  text-transform: none;
+  font-weight: 700;
+}
+
+/* Navigation lists (settings menu, sidebar menus): the current item gets a bar on the left,
+   like a TUI selection. */
+html[data-fork-terminal] [data-slot="sidebar-menu-button"] {
+  border-inline-start: 2px solid transparent !important;
+}
+html[data-fork-terminal] [data-slot="sidebar-menu-button"][data-active="true"] {
+  border-inline-start-color: var(--term-accent) !important;
+  color: var(--foreground) !important;
+}
+
+/* Settings section titles in the accent colour, like a pane title. */
+html[data-fork-terminal] [data-slot="settings-group"] h3.text-base {
+  color: var(--term-accent) !important;
+  font-size: 1em !important;
+  font-weight: 700 !important;
+}
+html[data-fork-terminal] [data-slot="settings-group"] h3.text-base::before {
+  content: "##";
+  margin-inline-end: 1ch;
+  color: var(--muted-foreground);
+  font-weight: 400;
+}
+
+/* Tool and command rows: a coloured "●" in place of the icon, like the CLI's tool calls.
+   Green when finished, red for errors; a running spinner is left alone. */
+html[data-fork-terminal]
+  [data-timeline-row-kind="work"]
+  [data-v2-item-type]
+  span.w-6:not(:has(.animate-spin))
+  > * {
+  display: none !important;
+}
+html[data-fork-terminal]
+  [data-timeline-row-kind="work"]
+  [data-v2-item-type]
+  span.w-6:not(:has(.animate-spin))::before {
+  content: "●";
+  line-height: normal;
+  color: var(--success);
+}
+html[data-fork-terminal]
+  [data-timeline-row-kind="work"]
+  [data-v2-item-type="error"]
+  span.w-6:not(:has(.animate-spin))::before {
+  color: var(--destructive);
+}

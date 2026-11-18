@@ -8,11 +8,13 @@ import { ForkUsageBar } from "./ForkUsageBar";
 import { installHiddenUi } from "./hiddenUi";
 import { installHidePicker } from "./hidePicker";
 import { installNoAutofill } from "./noAutofill";
+import { installTerminalStyle } from "./terminalStyle";
 import { TodoList } from "./TodoList";
 
 installNoAutofill();
 installHiddenUi();
 installHidePicker();
+installTerminalStyle();
 
 const matchesAltG = (event: KeyboardEvent) =>
   event.altKey && !event.shiftKey && !event.ctrlKey && !event.metaKey && event.code === "KeyG";

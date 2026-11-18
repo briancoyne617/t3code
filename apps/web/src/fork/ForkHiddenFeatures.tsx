@@ -1,12 +1,15 @@
 import { Button } from "../components/ui/button";
 import { RenderErrorBoundary } from "../components/RenderErrorBoundary";
 import { SettingsRow, SettingsSection } from "../components/settings/settingsLayout";
+import { Switch } from "../components/ui/switch";
+import { setTerminalStyle, useTerminalStyle } from "./terminalStyle";
 import { RESTORE_ATTR, showAll, showRule, useHiddenRules } from "./hiddenUi";
 
 /** Settings → Appearance: everything hidden with Alt+right-click, each with a way back. */
 export function ForkHiddenFeatures() {
   return (
     <RenderErrorBoundary fallback={null}>
+      <TerminalStyleSection />
       <HiddenFeaturesSection />
     </RenderErrorBoundary>
   );
@@ -53,5 +56,25 @@ function HiddenFeaturesSection() {
         )}
       </SettingsSection>
     </div>
+  );
+}
+
+/** Settings → Appearance: the fork's terminal (Claude Code CLI) look. */
+function TerminalStyleSection() {
+  const enabled = useTerminalStyle();
+  return (
+    <SettingsSection id="fork-terminal-style" title="Terminal style">
+      <SettingsRow
+        title="Look like the Claude Code CLI"
+        description="Monospace text, square corners, prompt-style messages and flat panels everywhere. Saved on this device."
+        control={
+          <Switch
+            checked={enabled}
+            onCheckedChange={(checked) => setTerminalStyle(Boolean(checked))}
+            aria-label="Terminal style"
+          />
+        }
+      />
+    </SettingsSection>
   );
 }
