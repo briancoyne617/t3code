@@ -1,0 +1,82 @@
+/* Fork: Omarchy/terminal-style boot screen, shown while T3 Code loads.
+   Only applies with the terminal style on; colours come from fork-boot.js (the last theme
+   the app showed) and fall back to T3's light/dark defaults, which follow the OS. */
+html[data-fork-terminal] #boot-shell {
+  font-family:
+    "JetBrainsMono Nerd Font", "JetBrains Mono", "SF Mono", Menlo, Consolas, "Liberation Mono",
+    monospace;
+  background: var(--boot-background, inherit);
+  color: var(--boot-foreground, inherit);
+}
+
+html[data-fork-terminal] #boot-shell-logo {
+  display: none;
+}
+
+html[data-fork-terminal] #boot-shell-card {
+  width: auto;
+  height: auto;
+  flex-direction: column;
+  gap: 14px;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+/* Wordmark: "T3" in the accent, "Code" in the text colour, a blinking block cursor. */
+html[data-fork-terminal] #boot-shell-card::before {
+  content: "T3 Code";
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--boot-foreground, currentColor);
+  background: linear-gradient(
+      90deg,
+      var(--boot-accent, currentColor) 0 2.3ch,
+      var(--boot-foreground, currentColor) 2.3ch
+    )
+    text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* A thin indeterminate bar, like Omarchy's boot splash, plus a status line. */
+html[data-fork-terminal] #boot-shell-card::after {
+  content: "";
+  width: 220px;
+  height: 2px;
+  background:
+    linear-gradient(90deg, transparent, var(--boot-accent, currentColor), transparent) 0 0 / 40%
+      100% no-repeat,
+    color-mix(in srgb, var(--boot-foreground, currentColor) 15%, transparent);
+  animation: fork-boot-bar 1.2s ease-in-out infinite;
+}
+
+html[data-fork-terminal] #boot-shell:not(:has(#boot-error))::after {
+  content: "starting…";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% + 48px);
+  text-align: center;
+  font-size: 12px;
+  color: var(--boot-muted, color-mix(in srgb, currentColor 55%, transparent));
+}
+
+@keyframes fork-boot-bar {
+  0% {
+    background-position:
+      -100% 0,
+      0 0;
+  }
+  100% {
+    background-position:
+      200% 0,
+      0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-fork-terminal] #boot-shell-card::after {
+    animation: none;
+  }
+}
