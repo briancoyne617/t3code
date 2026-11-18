@@ -67,13 +67,15 @@ Fork code lives in new files: `fork/` (tooling, todo service), `apps/web/src/for
 
 ## Backing up before wiping the host
 
-Stop nothing. Copy while stable runs, using SQLite's backup API in read-only mode so the live database is never opened for writing:
+Stop nothing. Copy while stable runs, using SQLite's backup API in read-only mode so the live database is never opened for writing. Copy in one pass (`rate` set high) onto the WSL disk first: a page-by-page copy restarts every time stable writes, so a slow copy straight to `/mnt/c` never finishes.
 
 ```sh
 B=/mnt/c/Users/brian/Documents/dev/t3-backup-$(date +%Y%m%d) && mkdir -p $B
-~/.local/share/vite-plus/js_runtime/node/26.12.1/bin/node -e 'const {DatabaseSync,backup}=require("node:sqlite");const db=new DatabaseSync(process.argv[1],{readOnly:true});backup(db,process.argv[2]).then(()=>console.log("ok"))' ~/.t3-stable/userdata/statev2.sqlite $B/statev2.sqlite
-cp ~/.t3-stable/userdata/{settings.json,keybindings.json} ~/.t3-fork/{todos.json,todoist.json,config.json,state.json} $B/
+~/.local/share/vite-plus/js_runtime/node/26.12.1/bin/node -e 'const {DatabaseSync,backup}=require("node:sqlite");backup(new DatabaseSync(process.argv[1],{readOnly:true}),process.argv[2],{rate:2147483647}).then(()=>console.log(new DatabaseSync(process.argv[2],{readOnly:true}).prepare("pragma integrity_check").get()))' ~/.t3-stable/userdata/statev2.sqlite ~/statev2-backup.sqlite
+mv ~/statev2-backup.sqlite $B/statev2.sqlite && cp ~/.t3-stable/userdata/{settings.json,keybindings.json} ~/.t3-fork/{todos.json,todoist.json,config.json,state.json} $B/
 ```
+
+The last backup was taken 2026-11-18 into `C:\Users\brian\Documents\dev\t3-backup-20261118` (integrity ok, 103 threads, 3,191 messages). It also holds `~/ide/README.md`, `~/ide/notes` and the Claude global CLAUDE.md and memory for this workspace. No secrets are in it.
 
 To restore on the new host, put these files back in the same places **before** stable's first start. Leave out `statev2.sqlite-wal` and `-shm`.
 
