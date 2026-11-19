@@ -1,4 +1,5 @@
 import { liveShellEnvironmentIdsAtom } from "../state/shell";
+import { sortByChatFlag, useChatFlags } from "../fork/chatFlags";
 import { attachSidebarTree } from "../lib/sidebarTree";
 import { type EnvironmentId, type ScopedProjectRef } from "@t3tools/contracts";
 import type { EnvironmentServerConfig } from "@t3tools/client-runtime/connection";
@@ -503,8 +504,11 @@ function useSidebarThreads(input: {
     clockKey: `${nowMinute}:${snoozeWakeClock}:${inboxReturnsVersion}`,
   });
 
-  const { pinnedThreads, activeThreads, workingThreads, snoozedThreads, settledThreads } =
-    partition;
+  const { pinnedThreads, snoozedThreads, settledThreads } = partition;
+  // Fork: flagged chats rise to the top of Working and of the waiting list, red → yellow → blue.
+  const chatFlags = useChatFlags();
+  const activeThreads = sortByChatFlag(partition.activeThreads, chatFlags);
+  const workingThreads = sortByChatFlag(partition.workingThreads, chatFlags);
   // Older settled threads load in pages; the shelf lists them only as far as they are loaded.
   const olderSettledShelf = useOlderSettledShelf({
     scopes: olderSettledScopes([...serverConfigs.keys()], scopedProjectKeys),

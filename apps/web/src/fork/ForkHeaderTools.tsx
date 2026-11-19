@@ -5,6 +5,7 @@ import { ForkKeybindCheatSheet } from "./ForkKeybindCheatSheet";
 import { ForkShortcutsDialog } from "./ForkShortcutsDialog";
 import { ForkHostResources, useForkHostResourcesVisibility } from "./ForkHostResources";
 import { ForkUsageBar } from "./ForkUsageBar";
+import { installChatFlags } from "./chatFlags";
 import { installHiddenUi } from "./hiddenUi";
 import { installHidePicker } from "./hidePicker";
 import { installNoAutofill } from "./noAutofill";
@@ -13,6 +14,7 @@ import { TodoList } from "./TodoList";
 
 installNoAutofill();
 installHiddenUi();
+installChatFlags();
 installHidePicker();
 installTerminalStyle();
 
