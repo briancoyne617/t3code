@@ -19,21 +19,21 @@ Both run on one machine without sharing a home, a port or login cookies. Dev use
 
 Fork code lives in new files: `fork/` (tooling, todo service), `apps/web/src/fork/` (UI) and a few server files. Upstream files carry only one- or two-line hooks, recorded in `fork/footprint.json`.
 
-| Area | What it does | Branch |
-| --- | --- | --- |
-| Stable/dev split | The `fork` CLI (`status`, `dev`, `promote`, `rollback`, `sync-upstream`, `setup`, `hooks`, `footprint`), immutable releases, DB snapshots before each server swap, automatic restore when a swap fails, and a `t3` shim that refuses self-updates | feat/dev-sandbox |
-| Todo lists | General, project and chat lists in their own service (127.0.0.1:3775). Quick-add syntax, recurring todos, server-side undo, ▶ to start a chat from a todo, and the `t3-todo` CLI for agents | feat/todos-poc, feat/todos-general, feat/todo-dupes, fix/todo-recovery, fix/todos-reachable |
-| Todoist mirror | Two-way sync with the Todoist project "T3" every 2 minutes, with duplicates folded together | feat/todoist-todos, feat/no-autofill |
-| Dev ↔ Stable panel | Shows what dev branches have that stable lacks, with a Pull in button per branch. A timer refreshes it every 2 minutes | feat/dev-stable-panel |
-| Hammer menu | Shows which instance you're on, switches to the other one, and runs the fork's dev tools | feat/dev-menu |
-| Chat header, top right | Provider usage limits (one row per provider; a Codex row without numbers hides when another has them), host CPU/RAM bars, the hammer, and the general Todo button (Alt+G) | feat/header-tools-right, feat/codex-managed-limits, feat/header-resources, feat/codex-limits-wait-indicator |
-| Composer | Inline reasoning-effort slider and keyword pin, a context-window bar showing used/total tokens, and a mic button that opens Voice setup when voice can't start yet | feat/composer-effort-slider, feat/composer-effort-keyword, feat/composer-context-bar, feat/header-resources |
-| Voice | Backport of upstream's environment dictation fixes | feat/upstream-voice |
-| Wait countdowns | Live countdown for chats waiting on a timer or background command. The sidebar dot fills like a pie | feat/wait-countdown |
-| Terminal | Ctrl+V pastes, Ctrl+C copies a selection, no popup on select (right-click still offers Add to chat) | feat/terminal-ctrl-v-paste, fix/terminal-copy-context, fix/no-terminal-selection-popup |
-| Hide UI | Alt+right-click any element to hide it. Settings → Appearance lists everything hidden, each with a way back | feat/hide-ui |
-| Shortcuts | `?` opens every shortcut, with search and rebinding. It warns about keys the browser keeps | feat/hide-ui |
-| No password-manager popups | Text inputs become search inputs so Bitwarden skips them | feat/no-autofill |
+| Area                       | What it does                                                                                                                                                                                                                                      | Branch                                                                                                      |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Stable/dev split           | The `fork` CLI (`status`, `dev`, `promote`, `rollback`, `sync-upstream`, `setup`, `hooks`, `footprint`), immutable releases, DB snapshots before each server swap, automatic restore when a swap fails, and a `t3` shim that refuses self-updates | feat/dev-sandbox                                                                                            |
+| Todo lists                 | General, project and chat lists in their own service (127.0.0.1:3775). Quick-add syntax, recurring todos, server-side undo, ▶ to start a chat from a todo, and the `t3-todo` CLI for agents                                                       | feat/todos-poc, feat/todos-general, feat/todo-dupes, fix/todo-recovery, fix/todos-reachable                 |
+| Todoist mirror             | Two-way sync with the Todoist project "T3" every 2 minutes, with duplicates folded together                                                                                                                                                       | feat/todoist-todos, feat/no-autofill                                                                        |
+| Dev ↔ Stable panel         | Shows what dev branches have that stable lacks, with a Pull in button per branch. A timer refreshes it every 2 minutes                                                                                                                            | feat/dev-stable-panel                                                                                       |
+| Hammer menu                | Shows which instance you're on, switches to the other one, and runs the fork's dev tools                                                                                                                                                          | feat/dev-menu                                                                                               |
+| Chat header, top right     | Provider usage limits (one row per provider; a Codex row without numbers hides when another has them), host CPU/RAM bars, the hammer, and the general Todo button (Alt+G)                                                                         | feat/header-tools-right, feat/codex-managed-limits, feat/header-resources, feat/codex-limits-wait-indicator |
+| Composer                   | Inline reasoning-effort slider and keyword pin, a context-window bar showing used/total tokens, and a mic button that opens Voice setup when voice can't start yet                                                                                | feat/composer-effort-slider, feat/composer-effort-keyword, feat/composer-context-bar, feat/header-resources |
+| Voice                      | Backport of upstream's environment dictation fixes                                                                                                                                                                                                | feat/upstream-voice                                                                                         |
+| Wait countdowns            | Live countdown for chats waiting on a timer or background command. The sidebar dot fills like a pie                                                                                                                                               | feat/wait-countdown                                                                                         |
+| Terminal                   | Ctrl+V pastes, Ctrl+C copies a selection, no popup on select (right-click still offers Add to chat)                                                                                                                                               | feat/terminal-ctrl-v-paste, fix/terminal-copy-context, fix/no-terminal-selection-popup                      |
+| Hide UI                    | Alt+right-click any element to hide it. Settings → Appearance lists everything hidden, each with a way back                                                                                                                                       | feat/hide-ui                                                                                                |
+| Shortcuts                  | `?` opens every shortcut, with search and rebinding. It warns about keys the browser keeps                                                                                                                                                        | feat/hide-ui                                                                                                |
+| No password-manager popups | Text inputs become search inputs so Bitwarden skips them                                                                                                                                                                                          | feat/no-autofill                                                                                            |
 
 ## Where everything lives
 
@@ -45,25 +45,25 @@ Fork code lives in new files: `fork/` (tooling, todo service), `apps/web/src/for
 
 ### On the host only (not in git)
 
-| Path | What | Replaceable? |
-| --- | --- | --- |
-| `~/.t3-stable/userdata/statev2.sqlite` (+ `-wal`) | Every stable thread and message (~260 MB) | **No.** Back it up. |
-| `~/.t3-stable/userdata/settings.json`, `keybindings.json` | Stable settings, provider instances, rebound keys | Small. Back it up. |
-| `~/.t3-stable/userdata/secrets/` | Provider credentials stored by T3 | Re-enter them in Settings |
-| `~/.t3-stable/projects`, `worktrees`, `tools` | Per-project data, agent worktrees, downloaded provider CLIs (e.g. Codex 0.166.0) | Mostly re-created; worktrees hold uncommitted agent work |
-| `~/.t3-fork/todos.json` | Every todo list (~650 KB). A daily copy goes to `~/.t3-fork/todo-backups/` | **No.** Back it up (Todoist holds a partial mirror of the "T3" project) |
-| `~/.t3-fork/todoist.json` | Todoist sync state (which todo maps to which task) | Back it up, or the first sync may duplicate |
-| `~/.t3-fork/todoist-token` | Todoist API token, 40 hex chars, mode 600 | Re-enter it via a secure prompt. Don't commit it |
-| `~/.t3-fork/config.json`, `state.json`, `releases/`, `snapshots/`, `logs/` | Fork tooling config, deploy history, builds (~15 GB), DB snapshots | `config.json` is small (defaults in `fork/cli/lib/core.ts`); the rest is rebuilt |
-| `~/.t3-fork/stable.env` | PATH and LANG for the stable service | Re-written by `fork setup` |
-| `~/.config/systemd/user/t3-fork-{stable,todos,pending}.*` | The three user services and the timer | Re-written by `fork setup` |
-| `~/.local/bin/t3`, `~/.local/bin/t3-todo` | CLI shims | Re-written by `fork setup` |
-| `~/.codex/` | Direct ChatGPT login for the built-in Codex instance (real usage limits) | Run `codex login --device-auth` again |
-| `~/.claude/` | Claude Code config, global CLAUDE.md, memory | Back it up separately |
-| Windows: `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\t3-fork-wsl-keepalive.vbs` | Starts WSL at logon and keeps it running | Re-written by `fork setup` |
-| Windows: `C:\Users\brian\.wslconfig` | `networkingMode=mirrored` | Keep it; it's on the Windows side |
-| `/etc/wsl.conf` | `[boot] systemd=true` | Needed for the user services |
-| Linger | `loginctl enable-linger brian` (currently on) | Run it once with sudo |
+| Path                                                                                         | What                                                                             | Replaceable?                                                                     |
+| -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `~/.t3-stable/userdata/statev2.sqlite` (+ `-wal`)                                            | Every stable thread and message (~260 MB)                                        | **No.** Back it up.                                                              |
+| `~/.t3-stable/userdata/settings.json`, `keybindings.json`                                    | Stable settings, provider instances, rebound keys                                | Small. Back it up.                                                               |
+| `~/.t3-stable/userdata/secrets/`                                                             | Provider credentials stored by T3                                                | Re-enter them in Settings                                                        |
+| `~/.t3-stable/projects`, `worktrees`, `tools`                                                | Per-project data, agent worktrees, downloaded provider CLIs (e.g. Codex 0.166.0) | Mostly re-created; worktrees hold uncommitted agent work                         |
+| `~/.t3-fork/todos.json`                                                                      | Every todo list (~650 KB). A daily copy goes to `~/.t3-fork/todo-backups/`       | **No.** Back it up (Todoist holds a partial mirror of the "T3" project)          |
+| `~/.t3-fork/todoist.json`                                                                    | Todoist sync state (which todo maps to which task)                               | Back it up, or the first sync may duplicate                                      |
+| `~/.t3-fork/todoist-token`                                                                   | Todoist API token, 40 hex chars, mode 600                                        | Re-enter it via a secure prompt. Don't commit it                                 |
+| `~/.t3-fork/config.json`, `state.json`, `releases/`, `snapshots/`, `logs/`                   | Fork tooling config, deploy history, builds (~15 GB), DB snapshots               | `config.json` is small (defaults in `fork/cli/lib/core.ts`); the rest is rebuilt |
+| `~/.t3-fork/stable.env`                                                                      | PATH and LANG for the stable service                                             | Re-written by `fork setup`                                                       |
+| `~/.config/systemd/user/t3-fork-{stable,todos,pending}.*`                                    | The three user services and the timer                                            | Re-written by `fork setup`                                                       |
+| `~/.local/bin/t3`, `~/.local/bin/t3-todo`                                                    | CLI shims                                                                        | Re-written by `fork setup`                                                       |
+| `~/.codex/`                                                                                  | Direct ChatGPT login for the built-in Codex instance (real usage limits)         | Run `codex login --device-auth` again                                            |
+| `~/.claude/`                                                                                 | Claude Code config, global CLAUDE.md, memory                                     | Back it up separately                                                            |
+| Windows: `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\t3-fork-wsl-keepalive.vbs` | Starts WSL at logon and keeps it running                                         | Re-written by `fork setup`                                                       |
+| Windows: `C:\Users\brian\.wslconfig`                                                         | `networkingMode=mirrored`                                                        | Keep it; it's on the Windows side                                                |
+| `/etc/wsl.conf`                                                                              | `[boot] systemd=true`                                                            | Needed for the user services                                                     |
+| Linger                                                                                       | `loginctl enable-linger brian` (currently on)                                    | Run it once with sudo                                                            |
 
 ## Backing up before wiping the host
 
