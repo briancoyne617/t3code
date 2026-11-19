@@ -100,7 +100,7 @@ function EffortSlider({ traits: input, disabled, size }: Props & { traits: Trait
             if (!input || unavailable) return;
             const onKeyDown = (event: KeyboardEvent) => {
               if (event.defaultPrevented || event.isComposing) return;
-              if (!event.ctrlKey || event.altKey || event.shiftKey || event.metaKey) return;
+              if (!event.altKey || !event.shiftKey || event.ctrlKey || event.metaKey) return;
               if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
               const target = event.target;
               if (!(target instanceof Element)) return;
@@ -124,13 +124,13 @@ function EffortSlider({ traits: input, disabled, size }: Props & { traits: Trait
             target?.addEventListener("keydown", onKeyDown, true);
             return () => target?.removeEventListener("keydown", onKeyDown, true);
           }}
-          aria-keyshortcuts="Control+ArrowLeft Control+ArrowRight"
+          aria-keyshortcuts="Alt+Shift+ArrowLeft Alt+Shift+ArrowRight"
           onChange={(event) => selectIndex(event.currentTarget.valueAsNumber)}
         />
       </TooltipTrigger>
       <TooltipPopup>
         {promptLocked ? ULTRATHINK_IN_BODY_NOTE : `${descriptor.label}: ${label}`}
-        {!unavailable ? <div className="text-muted-foreground">Ctrl+← / →</div> : null}
+        {!unavailable ? <div className="text-muted-foreground">Alt+Shift+← / →</div> : null}
       </TooltipPopup>
     </Tooltip>
   );

@@ -173,20 +173,20 @@ it("keeps prompt-controlled effort accurate and lets a prefix be cleared", async
   await expect.element(screen.getByRole("slider")).toBeDisabled();
 });
 
-it("steps effort with Ctrl+arrows while focus stays in the message editor", async () => {
+it("steps effort with Alt+Shift+arrows while focus stays in the message editor", async () => {
   await using screen = await render(<Slider />, { router: false });
   const slider = screen.getByRole("slider", { name: "Thinking" });
   const editor = screen.getByRole("textbox", { name: "Message" });
   await editor.fill("Keep this draft");
-  await userEvent.keyboard("{Control>}{ArrowLeft}{/Control}");
+  await userEvent.keyboard("{Alt>}{Shift>}{ArrowLeft}{/Shift}{/Alt}");
   await expect.element(slider).toHaveAttribute("aria-valuetext", "Low");
-  await userEvent.keyboard("{Control>}{ArrowLeft}{/Control}");
+  await userEvent.keyboard("{Alt>}{Shift>}{ArrowLeft}{/Shift}{/Alt}");
   await expect.element(slider).toHaveAttribute("aria-valuetext", "Low");
-  await userEvent.keyboard("{Control>}{ArrowRight}{/Control}");
+  await userEvent.keyboard("{Alt>}{Shift>}{ArrowRight}{/Shift}{/Alt}");
   await expect.element(slider).toHaveAttribute("aria-valuetext", "Medium");
   await expect.element(editor).toHaveFocus();
   await expect.element(editor).toHaveTextContent("Keep this draft");
   await screen.rerender(<Slider disabled />);
-  await userEvent.keyboard("{Control>}{ArrowRight}{/Control}");
+  await userEvent.keyboard("{Alt>}{Shift>}{ArrowRight}{/Shift}{/Alt}");
   await expect.element(slider).toHaveAttribute("aria-valuetext", "Medium");
 });
