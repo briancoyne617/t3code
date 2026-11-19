@@ -1,5 +1,4 @@
 import type { ScopedThreadRef } from "@t3tools/contracts";
-import { ListTodoIcon } from "lucide-react";
 
 import { RenderErrorBoundary } from "../components/RenderErrorBoundary";
 import { useThreadShell } from "../state/entities";
@@ -11,7 +10,7 @@ const matchesAltJ = (event: KeyboardEvent) =>
 
 // Keep the prompt text clear of the corner controls.
 const CORNER_CSS =
-  "[data-chat-composer-body]:has(> [data-fork-composer-corner]) :is([contenteditable=true], textarea) { padding-right: 2.75rem; }";
+  "[data-chat-composer-body]:has(> [data-fork-composer-corner]) :is([contenteditable=true], textarea) { padding-right: 6rem; }";
 
 /** The chat's todos and wait countdown, tiny, in the top-right corner inside the prompt box. */
 export function ForkChatTodos(props: { threadRef: ScopedThreadRef }) {
@@ -43,15 +42,16 @@ function ComposerCorner(props: { threadRef: ScopedThreadRef }) {
         trigger={
           <button
             type="button"
-            aria-label="Chat todos (Alt+J)"
-            className="inline-flex h-4 items-center gap-0.5 rounded px-0.5 text-2xs tabular-nums text-muted-foreground hover:bg-foreground/5 hover:text-foreground [&_svg]:size-3"
+            className="inline-flex h-5 items-center gap-1 rounded px-0.5 text-2xs tabular-nums text-muted-foreground hover:bg-foreground/5 hover:text-foreground [&_svg]:size-3"
           />
         }
         triggerLabel=""
         side="top"
         align="end"
         compact
-        icon={<ListTodoIcon aria-hidden="true" />}
+        promptOnSend={
+          shell != null && shell.archivedAt === null && shell.settledOverride !== "settled"
+        }
       />
       <ForkWaitBadge
         threadId={props.threadRef.threadId}

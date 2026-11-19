@@ -57,6 +57,7 @@ import {
   parseSideChatCommand,
   parseStandaloneComposerSlashCommand,
 } from "../../composer-logic";
+import { withTodoOwnershipPrompt } from "../../fork/todoOwnershipPrompt";
 import { applyComposerEffortKeyword } from "../../composerEffortKeyword";
 import { pinComposerEffortDial } from "../../composerEffortKeywordDial";
 import { resolvePlanFollowUpSubmission } from "../../proposedPlan";
@@ -924,12 +925,16 @@ export function useComposerSend(input: ComposerSendInput) {
     );
     const messageIdForSend = newMessageId();
     const messageCreatedAt = new Date().toISOString();
+    const outgoingText = messageTextForSend || ATTACHMENT_ONLY_BOOTSTRAP_PROMPT;
     const outgoingMessageText = formatOutgoingPrompt({
       provider: ctxSelectedProvider,
       model: ctxSelectedModel,
       models: ctxSelectedProviderModels,
       effort: ctxSelectedPromptEffort,
-      text: messageTextForSend || ATTACHMENT_ONLY_BOOTSTRAP_PROMPT,
+      text:
+        isServerThread && turnDispatchMode !== "steer"
+          ? withTodoOwnershipPrompt(outgoingText, scopeThreadRef(environmentId, threadIdForSend))
+          : outgoingText,
     });
     if (composerRef.current?.validateProviderInput(outgoingMessageText) === false) {
       return;

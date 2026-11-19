@@ -33,9 +33,7 @@ export function ForkContextWindowBar(props: {
   const totalProcessedTokens = usage.totalProcessedTokens ?? null;
   const showTotalProcessed = totalProcessedTokens !== null && totalProcessedTokens > 0;
   const isOverloaded = normalizedPercentage > 90;
-  const usageColor = isOverloaded
-    ? "var(--color-error)"
-    : "color-mix(in oklab, var(--color-muted-foreground) 72%, transparent)";
+  const usageColor = isOverloaded ? "var(--color-error)" : "var(--color-primary)";
 
   return (
     <Popover>
@@ -44,33 +42,36 @@ export function ForkContextWindowBar(props: {
         delay={150}
         closeDelay={onCompact ? 150 : 0}
         render={
-          <Button
-            size="sm"
-            variant="ghost-muted"
+          <button
+            type="button"
             data-context-window-bar
-            className="h-7 w-24 shrink-0"
+            className="flex h-9 w-36 min-w-32 shrink items-center rounded-md border border-foreground/25 bg-foreground/5 px-2 text-foreground hover:bg-foreground/10 focus-visible:outline-2 focus-visible:outline-ring"
             aria-label={
               usage.maxTokens !== null && usedPercentage
                 ? `Context window ${usedPercentage} used`
                 : `Context window ${formatContextWindowTokens(usage.usedTokens)} tokens used`
             }
           >
-            <span className="relative flex h-4.5 w-full items-center justify-center overflow-hidden rounded-full bg-muted-foreground/16">
+            <span className="relative flex w-full min-w-0 flex-col items-center overflow-hidden rounded bg-muted-foreground/15">
               {usage.maxTokens !== null ? (
                 <span
                   aria-hidden="true"
-                  className="absolute inset-y-0 left-0 opacity-45 transition-[width,background-color] duration-500 ease-out motion-reduce:transition-none"
+                  className="absolute inset-y-0 left-0 opacity-25 transition-[width,background-color] duration-500 ease-out motion-reduce:transition-none"
                   style={{ width: `${normalizedPercentage}%`, backgroundColor: usageColor }}
                 />
               ) : null}
-              <span className="relative text-2xs font-medium tabular-nums text-foreground/80">
+              <span className="relative whitespace-nowrap text-2xs font-semibold tabular-nums">
+                Context {usedPercentage ? `${usedPercentage} used` : "usage"}
+              </span>
+              <span className="relative whitespace-nowrap text-2xs tabular-nums">
                 {formatContextWindowTokens(usage.usedTokens)}
                 {usage.maxTokens !== null
                   ? `/${formatContextWindowTokens(usage.maxTokens ?? null)}`
-                  : null}
+                  : null}{" "}
+                tokens
               </span>
             </span>
-          </Button>
+          </button>
         }
       />
       <PopoverPopup
@@ -164,7 +165,7 @@ export function ForkContextWindowBar(props: {
 /** Reserves the bar's width while the thread loads, so the footer does not jump when it lands. */
 export function ForkContextWindowBarPlaceholder() {
   return (
-    <span aria-hidden="true" className="flex h-7 w-24 shrink-0 justify-end">
+    <span aria-hidden="true" className="flex h-9 w-36 min-w-32 shrink justify-end">
       <ContextWindowMeterPlaceholder />
     </span>
   );

@@ -1,6 +1,7 @@
 // Shared by the web UI and the fork todo service (fork/todos/server.ts), so it imports nothing.
 
 export type TodoStatus = "open" | "done" | "deleted";
+export type TodoOwner = "user" | "agent";
 export type Priority = 1 | 2 | 3 | 4;
 
 export interface Todo {
@@ -27,6 +28,7 @@ export interface Todo {
   completedAt: string | null;
   deletedAt: string | null;
   createdBy: "user" | "agent";
+  owner?: TodoOwner | null;
   order: number;
 }
 

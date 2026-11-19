@@ -1,8 +1,9 @@
+import { BotIcon, ListTodoIcon } from "lucide-react";
 import { type ReactElement, useEffect, useState } from "react";
 
 import { RenderErrorBoundary } from "../components/RenderErrorBoundary";
 import { Popover, PopoverPopup, PopoverTrigger } from "../components/ui/popover";
-import { TodoPanel, type TodoScope, useOpenTodoCount } from "./TodoPanel";
+import { TodoPanel, type TodoScope, useOpenTodoCounts } from "./TodoPanel";
 
 export function isTypingTarget(target: EventTarget | null): boolean {
   return (
@@ -31,14 +32,13 @@ function TodoListButton(props: {
   triggerLabel: string;
   side: "top" | "bottom";
   align?: "start" | "end";
-  /** Shown before the label, e.g. a composer-tab icon. */
-  icon?: ReactElement;
-  /** Icon plus the bare count, for tight spots like the composer corner. */
+  /** Owner icons and counts, for tight spots like the composer corner. */
   compact?: boolean;
+  promptOnSend?: boolean;
 }) {
   const { matchesHotkey } = props;
   const [open, setOpen] = useState(false);
-  const count = useOpenTodoCount(props.scope);
+  const counts = useOpenTodoCounts(props.scope);
 
   // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- global hotkey is a DOM listener outside React
   useEffect(() => {
@@ -53,18 +53,42 @@ function TodoListButton(props: {
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger render={props.trigger}>
-        {props.icon ?? null}
-        {props.icon ? (
-          <span>{props.compact ? count || "" : `Todos${count > 0 ? ` ${count}` : ""}`}</span>
-        ) : (
-          <>
-            {props.triggerLabel}
-            {count > 0 ? ` (${count})` : ""}
-          </>
-        )}
+      <PopoverTrigger
+        render={props.trigger}
+        aria-label={`${props.title}: ${counts.user} open todos for you, ${counts.agent} for agent, ${counts.unassigned} need assignment (${props.hotkeyLabel})`}
+      >
+        {!props.compact ? <span>{props.triggerLabel || "Todos"}</span> : null}
+        <span className="inline-flex items-center gap-1 tabular-nums">
+          <span
+            className="inline-flex items-center gap-0.5"
+            aria-label={`${counts.user} open todos for you`}
+          >
+            <ListTodoIcon aria-hidden="true" className="size-3" />
+            {counts.user}
+          </span>
+          <span
+            className="inline-flex items-center gap-0.5"
+            aria-label={`${counts.agent} open todos for agent`}
+          >
+            <BotIcon aria-hidden="true" className="size-3" />
+            {counts.agent}
+          </span>
+          {counts.unassigned > 0 ? (
+            <span className="text-warning" aria-label={`${counts.unassigned} need assignment`}>
+              ?
+            </span>
+          ) : null}
+        </span>
       </PopoverTrigger>
       <PopoverPopup side={props.side} align={props.align ?? "start"}>
+        {counts.unassigned > 0 ? (
+          <p className="mb-2 text-xs text-muted-foreground">
+            {counts.unassigned} need assignment.{" "}
+            {props.promptOnSend
+              ? "Choose an owner below or have the agent review them with your next message."
+              : "Choose an owner below."}
+          </p>
+        ) : null}
         <TodoPanel
           scope={props.scope}
           title={props.title}

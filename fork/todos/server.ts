@@ -11,6 +11,7 @@ import {
   parseTodoInput,
   type Priority,
   type Todo,
+  type TodoOwner,
 } from "../../apps/web/src/fork/todoModel.ts";
 import {
   loadState,
@@ -158,6 +159,7 @@ interface CreateBody {
   threadId?: string | null;
   links?: string[];
   createdBy?: "user" | "agent";
+  owner?: TodoOwner | null;
   priority?: Priority;
   due?: string | null;
   time?: string | null;
@@ -191,6 +193,7 @@ function makeTodo(body: CreateBody, now: Date): Todo {
     completedAt: body.done ? stamp : null,
     deletedAt: null,
     createdBy: body.createdBy ?? "user",
+    owner: parseOwner(body.owner),
     order: store.todos.reduce((max, t) => Math.max(max, t.order), 0) + 1,
   };
 }
@@ -213,6 +216,7 @@ function newTodo(fields: Partial<Todo> & { text: string }): Todo {
     completedAt: null,
     deletedAt: null,
     createdBy: "user",
+    owner: "user",
     order: store.todos.reduce((max, t) => Math.max(max, t.order), 0) + 1,
     ...fields,
   };
@@ -280,8 +284,16 @@ interface PatchBody {
   projectId?: string | null;
   threadId?: string | null;
   status?: Todo["status"];
+  ifUnassigned?: boolean;
+  owner?: TodoOwner | null;
   addLink?: string;
   removeLink?: string;
+}
+
+function parseOwner(value: unknown): TodoOwner | null {
+  if (value === undefined || value === null) return null;
+  if (value === "user" || value === "agent") return value;
+  throw new HttpError(400, "owner must be user, agent, or null");
 }
 
 function patchTodo(before: Todo, body: PatchBody, now: Date): { after: Todo; label: string } {
@@ -307,6 +319,13 @@ function patchTodo(before: Todo, body: PatchBody, now: Date): { after: Todo; lab
   if (body.labels !== undefined) after.labels = body.labels;
   if (body.projectId !== undefined) after.projectId = body.projectId;
   if (body.threadId !== undefined) after.threadId = body.threadId;
+  if (body.owner !== undefined) {
+    if (body.ifUnassigned && (before.owner != null || before.status !== "open")) {
+      throw new HttpError(409, "todo is already assigned or no longer open");
+    }
+    after.owner = parseOwner(body.owner);
+    label = `changed ownership of "${short(before.text)}"`;
+  }
   if (body.addLink && !after.links.includes(body.addLink)) {
     after.links = [...after.links, body.addLink];
     label = `linked a chat to "${short(before.text)}"`;
@@ -466,9 +485,10 @@ async function handle(req: NodeHttp.IncomingMessage, res: NodeHttp.ServerRespons
   }
   const one = path.match(/^\/api\/todos\/([\w-]+)$/);
   if (one && method === "PATCH") {
+    const body = await readBody<PatchBody>(req);
     const before = store.todos.find((t) => t.id === one[1]);
     if (!before) throw new HttpError(404, "no such todo");
-    const { after, label } = patchTodo(before, await readBody<PatchBody>(req), now);
+    const { after, label } = patchTodo(before, body, now);
     commit(label, [{ before, after }]);
     return json(200, after);
   }
@@ -524,7 +544,10 @@ const server = NodeHttp.createServer((req, res) => {
 
 scheduleTodoist(5_000);
 server.listen(Number(values.port), values.host, () => {
-  console.log(`fork todos on http://${values.host}:${values.port} (data ${dataFile})`);
+  const address = server.address();
+  if (address && typeof address !== "string") {
+    console.log(`fork todos on http://${values.host}:${address.port} (data ${dataFile})`);
+  }
 });
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, () => {
