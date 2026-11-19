@@ -57,6 +57,7 @@ import {
   parseSideChatCommand,
   parseStandaloneComposerSlashCommand,
 } from "../../composer-logic";
+import { notifyWaitingChatAfterSend } from "../../fork/advanceWaitingChat";
 import { withTodoOwnershipPrompt } from "../../fork/todoOwnershipPrompt";
 import { applyComposerEffortKeyword } from "../../composerEffortKeyword";
 import { pinComposerEffortDial } from "../../composerEffortKeywordDial";
@@ -486,6 +487,11 @@ export function useComposerSend(input: ComposerSendInput) {
       return;
     }
     const sendCtx = composerRef.current?.getSendContext();
+    const notifySuccessfulReply = () => {
+      if (isServerThread && submissionIntent === "foreground") {
+        notifyWaitingChatAfterSend(scopeThreadRef(environmentId, activeThread.id));
+      }
+    };
     // `/side` beats an open question and a plan follow-up, which would send the text to main.
     const sideChatCommand =
       sendCtx && !directAnnotation && !queuedRunEdit.isEditing
@@ -813,6 +819,8 @@ export function useComposerSend(input: ComposerSendInput) {
         currentRouteThreadKeyRef.current === routeThreadKey
       ) {
         handleNewThreadInActiveProject();
+      } else {
+        notifySuccessfulReply();
       }
       return;
     }
@@ -1528,7 +1536,8 @@ export function useComposerSend(input: ComposerSendInput) {
     }
     sendInFlightRef.current = false;
     setSetupQueueSendThreadKey((current) => (current === activeThreadKey ? null : current));
-    if (!turnStartSucceeded) {
+    if (turnStartSucceeded) notifySuccessfulReply();
+    else {
       setDockedDraftHeroThreadKey((currentThreadKey) =>
         currentThreadKey === activeThreadKey ? null : currentThreadKey,
       );
