@@ -1,7 +1,9 @@
 import { AuthOrchestrationReadScope, type EnvironmentId } from "@t3tools/contracts";
+import * as Schema from "effect/Schema";
 
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../components/ui/tooltip";
 import { useLiveRefresh } from "../hooks/useLiveRefresh";
+import { useLocalStorage } from "../hooks/useLocalStorage";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { formatBytes } from "../lib/formatBytes";
 import { cn } from "../lib/utils";
@@ -9,6 +11,10 @@ import { useEnvironment } from "../state/environments";
 import { useEnvironmentQuery } from "../state/query";
 import { serverEnvironment } from "../state/server";
 import { useEnvironmentScope } from "../state/session";
+
+export function useForkHostResourcesVisibility() {
+  return useLocalStorage("fork.showHostResources", false, Schema.Boolean);
+}
 
 function ResourceMeter({ label, percent }: { label: string; percent: number | null }) {
   return (

@@ -2,8 +2,7 @@ import type { EnvironmentId } from "@t3tools/contracts";
 
 import { Button } from "../components/ui/button";
 import { ForkShortcutsDialog } from "./ForkShortcutsDialog";
-import { ForkDevMenu } from "./ForkDevMenu";
-import { ForkHostResources } from "./ForkHostResources";
+import { ForkHostResources, useForkHostResourcesVisibility } from "./ForkHostResources";
 import { ForkUsageBar } from "./ForkUsageBar";
 import { installHiddenUi } from "./hiddenUi";
 import { installHidePicker } from "./hidePicker";
@@ -28,13 +27,13 @@ export function ForkHeaderTools() {
   );
 }
 
-/** Top-right of the chat header: provider limits, the dev-tools hammer and the general todo list. */
+/** Top-right of the chat header: provider limits, optional host usage and the general todo list. */
 export function ForkChatHeaderTools(props: { environmentId: EnvironmentId }) {
+  const [showHostResources] = useForkHostResourcesVisibility();
   return (
     <div className="ml-auto flex max-w-[60%] shrink-0 items-center gap-1">
-      <ForkHostResources environmentId={props.environmentId} />
+      {showHostResources ? <ForkHostResources environmentId={props.environmentId} /> : null}
       <ForkUsageBar layout="header" environmentId={props.environmentId} />
-      <ForkDevMenu />
       <TodoList
         scope={{ kind: "general" }}
         title="General todos"

@@ -4,7 +4,7 @@ import { page } from "vite-plus/test/browser";
 
 import { render } from "../../test/render";
 import { openCommandPalette } from "../commandPaletteBus";
-import { useCommandPaletteStore } from "../commandPaletteStore";
+import { dispatchCommandPalette, useCommandPaletteStore } from "../commandPaletteStore";
 import { makeThreadFixture } from "../test-fixtures";
 import type { Project, Thread } from "../types";
 import { CommandPalette } from "./CommandPalette";
@@ -44,6 +44,18 @@ describe("CommandPalette open intents", () => {
     const input = page.getByPlaceholder("Search commands, projects, and threads...");
     await expect.element(input).toHaveFocus();
     await expect.element(input).toHaveValue("acme");
+  });
+
+  it("finds developer tools in the file picker without a project", async () => {
+    setup();
+    await using _screen = await render(<CommandPalette>{null}</CommandPalette>);
+    dispatchCommandPalette({ _tag: "ToggleMode", mode: "files" });
+    const input = page.getByPlaceholder("Search files or developer tools…");
+
+    await input.fill("hammer");
+    await expect.element(page.getByRole("option", { name: /Open Dev|Open Stable/ })).toBeVisible();
+    await page.getByRole("option", { name: /Dev ↔ Stable changes/ }).click();
+    await expect.element(page.getByRole("dialog", { name: "Dev ↔ Stable" })).toBeVisible();
   });
 
   it("opens a searched project's latest listed thread, not a newer subagent", async () => {
