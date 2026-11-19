@@ -1,7 +1,7 @@
 import { PanelBottomIcon, PanelRightIcon, SquareMenuIcon } from "lucide-react";
 import { Maximize2, Minimize2 } from "lucide";
 import { MorphIcon } from "~/components/MorphIcon";
-import { memo, type ReactNode } from "react";
+import { memo } from "react";
 
 import { cn } from "~/lib/utils";
 
@@ -161,18 +161,6 @@ export const RightPanelMaximizeControl = memo(function RightPanelMaximizeControl
   );
 });
 
-/** The thread panel toggle on a header whose right side the inline right panel covers. */
-export function ThreadPanelHeaderControl(props: PanelLayoutControlsProps) {
-  return (
-    <div
-      className="absolute top-[var(--workspace-controls-top)] right-[calc(env(safe-area-inset-right)+0.75rem)] z-50 flex h-[var(--workspace-topbar-height)] items-center [-webkit-app-region:no-drag]"
-      data-workspace-titlebar-controls
-    >
-      <PanelLayoutControls {...props} showTerminalControl={false} showRightPanelControl={false} />
-    </div>
-  );
-}
-
 /** The window's top-right panel controls, with the maximize toggle while the panel is open. */
 export function WorkspaceTitlebarControls(props: {
   readonly showMaximizeControl: boolean;
@@ -180,7 +168,6 @@ export function WorkspaceTitlebarControls(props: {
   readonly animationsActive: boolean;
   readonly maximized: boolean;
   readonly onToggleMaximized: () => void;
-  readonly children: ReactNode;
 }) {
   return (
     <div
@@ -208,7 +195,6 @@ export function WorkspaceTitlebarControls(props: {
           />
         </span>
       ) : null}
-      <div className="pointer-events-auto flex h-full items-center">{props.children}</div>
     </div>
   );
 }

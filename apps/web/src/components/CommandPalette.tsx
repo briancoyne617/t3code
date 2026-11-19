@@ -263,6 +263,8 @@ import { readPullRequestListPreferences } from "~/components/pullRequest/pullReq
 import { useThreadRouteTarget } from "../hooks/useThreadRouteTarget";
 import { threadRecentUse } from "@t3tools/shared/paletteSearch";
 
+import { useForkDeveloperActions } from "../fork/useForkDeveloperActions";
+
 const EMPTY_BROWSE_ENTRIES: FilesystemBrowseResult["entries"] = [];
 const ADD_PROJECT_ENTRY_GROUP = "add-project";
 const NEW_THREAD_IN_GROUP = "projects";
@@ -295,6 +297,7 @@ const NEW_THREAD_NO_PROJECT_VALUE = "new-thread-in:no-project";
 
 export function CommandPalette({ children }: { children: ReactNode }) {
   useCommandPaletteMount();
+  const developerTools = useForkDeveloperActions();
   const state = useCommandPaletteStore();
   const setOpen = (open: boolean) => dispatchCommandPalette({ _tag: "SetOpen", open });
   const openChildSearch = (mode: "files" | "content", context: CommandPaletteReturnContext) =>
@@ -318,6 +321,7 @@ export function CommandPalette({ children }: { children: ReactNode }) {
           {children}
         </div>
         <CommandPaletteDialog
+          developerActions={developerTools.actions}
           mode={state.mode}
           session={state.session}
           openIntent={state.openIntent}
@@ -326,11 +330,13 @@ export function CommandPalette({ children }: { children: ReactNode }) {
           initialContext={state.restoredSearch}
         />
       </CommandDialog>
+      {developerTools.dialog}
     </ComposerHandleContext>
   );
 }
 
 function CommandPaletteDialog(props: {
+  readonly developerActions: ReadonlyArray<CommandPaletteActionItem>;
   readonly mode: SearchOverlayMode;
   readonly session: number;
   readonly openIntent: CommandPaletteOpenIntent | null;
@@ -371,7 +377,7 @@ function CommandPaletteDialog(props: {
       }}
     >
       {props.mode === "files" ? (
-        <ProjectFilePicker setOpen={props.setOpen} />
+        <ProjectFilePicker setOpen={props.setOpen} developerActions={props.developerActions} />
       ) : props.mode === "content" ? (
         <ProjectContentSearchDialog onOpenChange={props.setOpen} />
       ) : (

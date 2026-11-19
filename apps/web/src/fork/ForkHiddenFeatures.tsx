@@ -2,6 +2,7 @@ import { Button } from "../components/ui/button";
 import { RenderErrorBoundary } from "../components/RenderErrorBoundary";
 import { SettingsRow, SettingsSection } from "../components/settings/settingsLayout";
 import { Switch } from "../components/ui/switch";
+import { useForkHostResourcesVisibility } from "./ForkHostResources";
 import { setTerminalStyle, useTerminalStyle } from "./terminalStyle";
 import { RESTORE_ATTR, showAll, showRule, useHiddenRules } from "./hiddenUi";
 
@@ -10,6 +11,7 @@ export function ForkHiddenFeatures() {
   return (
     <RenderErrorBoundary fallback={null}>
       <TerminalStyleSection />
+      <HostResourcesSection />
       <HiddenFeaturesSection />
     </RenderErrorBoundary>
   );
@@ -73,6 +75,21 @@ function TerminalStyleSection() {
             onCheckedChange={(checked) => setTerminalStyle(Boolean(checked))}
             aria-label="Terminal style"
           />
+        }
+      />
+    </SettingsSection>
+  );
+}
+
+function HostResourcesSection() {
+  const [visible, setVisible] = useForkHostResourcesVisibility();
+  return (
+    <SettingsSection id="fork-host-resources" title="Chat header">
+      <SettingsRow
+        title="Show CPU and RAM"
+        description="Display host usage in the chat header. Saved on this device."
+        control={
+          <Switch checked={visible} onCheckedChange={setVisible} aria-label="Show CPU and RAM" />
         }
       />
     </SettingsSection>
