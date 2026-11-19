@@ -3,12 +3,30 @@ import { type ReactElement, useEffect, useState } from "react";
 
 import { RenderErrorBoundary } from "../components/RenderErrorBoundary";
 import { Popover, PopoverPopup, PopoverTrigger } from "../components/ui/popover";
-import { TodoPanel, type TodoScope, useOpenTodoCounts } from "./TodoPanel";
+import {
+  TodoPanel,
+  type TodoScope,
+  useOpenTodoCounts,
+  useOtherProjectTodoCounts,
+} from "./TodoPanel";
 
 export function isTypingTarget(target: EventTarget | null): boolean {
   return (
     target instanceof HTMLElement &&
     (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
+  );
+}
+
+/** The project's extra todos as a small raised number, like a derivative mark. */
+function Elsewhere(props: { count: number; who: string }) {
+  if (props.count <= 0) return null;
+  return (
+    <sup
+      className="-ml-px self-start text-3xs leading-none text-muted-foreground/70"
+      aria-label={`plus ${props.count} more for ${props.who} elsewhere in this project`}
+    >
+      {props.count}
+    </sup>
   );
 }
 
@@ -39,6 +57,7 @@ function TodoListButton(props: {
   const { matchesHotkey } = props;
   const [open, setOpen] = useState(false);
   const counts = useOpenTodoCounts(props.scope);
+  const elsewhere = useOtherProjectTodoCounts(props.scope);
 
   // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- global hotkey is a DOM listener outside React
   useEffect(() => {
@@ -65,6 +84,7 @@ function TodoListButton(props: {
           >
             <ListTodoIcon aria-hidden="true" className="size-3" />
             {counts.user}
+            <Elsewhere count={elsewhere.user} who="you" />
           </span>
           <span
             className="inline-flex items-center gap-0.5"
@@ -72,6 +92,7 @@ function TodoListButton(props: {
           >
             <BotIcon aria-hidden="true" className="size-3" />
             {counts.agent}
+            <Elsewhere count={elsewhere.agent} who="agent" />
           </span>
           {counts.unassigned > 0 ? (
             <span className="text-warning" aria-label={`${counts.unassigned} need assignment`}>

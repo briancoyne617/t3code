@@ -88,7 +88,7 @@ function inScope(
   todo: Todo,
   scope: TodoScope,
   showAll: boolean,
-  shells: Map<string, EnvironmentThreadShell>,
+  shells: ReadonlyMap<string, { readonly projectId: string }>,
 ) {
   if (showAll) return true;
   switch (scope.kind) {
@@ -118,6 +118,34 @@ export function useOpenTodoCounts(scope: TodoScope) {
     }
   }
   return counts;
+}
+
+/** Open todos elsewhere in a chat's project: in the project but not on this chat's list. */
+export function countOtherProjectTodos(
+  todos: readonly Todo[],
+  scope: TodoScope,
+  shells: ReadonlyMap<string, { readonly projectId: string }>,
+) {
+  const counts = { user: 0, agent: 0, unassigned: 0 };
+  if (scope.kind !== "thread" || scope.projectId === null) return counts;
+  const project: TodoScope = { kind: "project", projectId: scope.projectId };
+  for (const todo of todos) {
+    if (
+      todo.status === "open" &&
+      inScope(todo, project, false, shells) &&
+      !inScope(todo, scope, false, shells)
+    ) {
+      counts[todo.owner ?? "unassigned"] += 1;
+    }
+  }
+  return counts;
+}
+
+export function useOtherProjectTodoCounts(scope: TodoScope) {
+  const { todos } = useTodos();
+  const shellList = useThreadShells(scope.kind === "thread" && scope.projectId !== null);
+  const shells = new Map(shellList.map((shell) => [shell.id, shell]));
+  return countOtherProjectTodos(todos, scope, shells);
 }
 
 /** A Todoist-style list: quick add with natural language, priorities, dates, linked chats, undo. */
