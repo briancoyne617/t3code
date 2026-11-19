@@ -70,12 +70,23 @@ export function ForkUsageBar(props: { environmentId?: EnvironmentId; layout?: "h
       aria-label="Provider usage limits"
       className={cn(
         "flex flex-col gap-0.5 text-2xs leading-tight tabular-nums",
-        props.layout === "header" ? "hidden min-w-0 shrink sm:flex" : "px-3 pb-1",
+        props.layout === "header"
+          ? "hidden min-w-0 shrink flex-row items-center gap-x-4 overflow-hidden whitespace-nowrap sm:flex"
+          : "px-3 pb-1",
       )}
     >
       {rows.map((provider) => (
         <Tooltip key={provider.instanceId}>
-          <TooltipTrigger render={<div className="flex flex-wrap items-baseline gap-x-2" />}>
+          <TooltipTrigger
+            render={
+              <div
+                className={cn(
+                  "flex items-baseline gap-x-2",
+                  props.layout === "header" ? "shrink-0 flex-nowrap" : "flex-wrap",
+                )}
+              />
+            }
+          >
             <span className="font-medium">{PROVIDER_DISPLAY_NAMES[provider.driver]}</span>
             {(provider.usageLimits?.windows.length ?? 0) === 0 ? (
               <span className="text-muted-foreground">limits unavailable</span>

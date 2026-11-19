@@ -32,7 +32,8 @@ export function useAdvanceWaitingChat(input: {
       )
         continue;
       const thread = input.threadByKey.get(key);
-      if (thread && resolveSidebarThreadStatus(thread) === "waiting") {
+      // The top chat that is not busy: waiting, asking, limited or finished.
+      if (thread && resolveSidebarThreadStatus(thread) !== "working") {
         input.openThread(scopeThreadRef(thread.environmentId, thread.id));
         return;
       }
