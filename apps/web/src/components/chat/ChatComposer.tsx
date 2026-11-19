@@ -261,6 +261,10 @@ import {
 } from "@t3tools/client-runtime/state/composer-dispatch";
 import { deriveLatestContextWindowSnapshot } from "../../lib/contextWindow";
 import {
+  ForkContextWindowBar,
+  ForkContextWindowBarPlaceholder,
+} from "../../fork/ForkContextWindowBar";
+import {
   resolveProviderSkillsForCwd,
   resolveProviderSlashCommandsForCwd,
 } from "@t3tools/client-runtime/providerSkills";
@@ -1004,8 +1008,10 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
     activeThreadModelSelection,
     modelOptionsByInstance,
   );
+
+  // Fork: the bar always shows (no legacy setting); hold its place while the thread loads.
   const reserveContextWindowMeter = shouldReserveContextWindowMeter({
-    meterEnabled: settings.contextWindowMeterEnabled,
+    meterEnabled: true,
     detailLoading: props.threadSyncPhase === "loading",
     threadStarted: threadShellHasStarted(props.activeThreadShell),
     providerReportsContextWindow: selectedProviderStatus
@@ -2411,6 +2417,19 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
       : expandedControlsIconOnlyBlockCount;
   const composerControls = (
     <ComposerControlsBar
+      contextBar={
+        activeContextWindow ? (
+          <ForkContextWindowBar
+            usage={activeContextWindow}
+            modelDisplayName={activeThreadModelDisplayName}
+            onCompact={compactCommandAvailable ? compactThreadContextStable : undefined}
+            compactDisabled={compactDisabled || noProviderAvailable || isSendBusy}
+            compactDisabledReason={resolvedCompactDisabledReason}
+          />
+        ) : reserveContextWindowMeter ? (
+          <ForkContextWindowBarPlaceholder />
+        ) : null
+      }
       environmentId={environmentId}
       routeKind={routeKind}
       routeThreadRef={routeThreadRef}
@@ -3612,10 +3631,8 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                   <ComposerFooterPrimaryActions
                     compact={isComposerPrimaryActionsCompact}
                     canOperateThread={canOperateThread}
-                    activeContextWindow={
-                      settings.contextWindowMeterEnabled ? activeContextWindow : null
-                    }
-                    reserveContextWindowMeter={reserveContextWindowMeter}
+                    activeContextWindow={null}
+                    reserveContextWindowMeter={false}
                     activeThreadModelDisplayName={activeThreadModelDisplayName}
                     pendingAction={pendingPrimaryAction}
                     isRunning={phase === "running"}

@@ -10,7 +10,7 @@ function Listener(props: Parameters<typeof useAdvanceWaitingChat>[0]) {
   return null;
 }
 
-it("opens the first visible waiting chat after a send from the current chat", async () => {
+it("opens the first chat that is not busy after a send from the current chat", async () => {
   const ref = (name: string) => scopeThreadRef(EnvironmentId.make("test"), ThreadId.make(name));
   const sent = ref("sent");
   const top = ref("top");
@@ -32,7 +32,12 @@ it("opens the first visible waiting chat after a send from the current chat", as
               hasPendingUserInput: false,
               pendingSubagentRequest: null,
               runtime: {
-                status: thread.threadId === "working" ? "running" : "idle",
+                status:
+                  thread.threadId === "working"
+                    ? "running"
+                    : thread.threadId === "top"
+                      ? "failed"
+                      : "idle",
                 providerInstanceId: ProviderInstanceId.make("test"),
                 providerName: null,
                 activeRunId: null,

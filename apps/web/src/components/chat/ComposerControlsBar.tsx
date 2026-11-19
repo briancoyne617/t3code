@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { ChatComposerProps } from "./ChatComposer";
 import type { PromptUltrathink } from "./TraitsPicker";
 import type { ProviderInstanceEntry } from "../../providerInstances";
@@ -40,6 +41,8 @@ import { ForkComposerEffortSlider } from "./ForkComposerEffortSlider";
 const MODEL_TRIGGER_STATES = "data-popup-open:bg-accent data-popup-open:text-foreground";
 
 export function ComposerControlsBar(props: {
+  /** Fork: the context window bar, shown right after the effort slider. */
+  contextBar?: ReactNode;
   environmentId: EnvironmentId;
   routeKind: ChatComposerProps["routeKind"];
   routeThreadRef: ChatComposerProps["routeThreadRef"];
@@ -278,6 +281,7 @@ export function ComposerControlsBar(props: {
         size={controlSize}
         disabled={providerCatalogPending || isSendBusy}
       />
+      {props.contextBar}
 
       <>
         {restingBlockDefs.map((def, index) => {
