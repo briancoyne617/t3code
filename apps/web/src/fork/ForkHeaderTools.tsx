@@ -31,9 +31,9 @@ export function ForkHeaderTools() {
 export function ForkChatHeaderTools(props: { environmentId: EnvironmentId }) {
   const [showHostResources] = useForkHostResourcesVisibility();
   return (
-    <div className="ml-auto flex min-w-0 max-w-[60%] shrink items-center gap-3 text-xs">
+    <div className="ml-auto flex shrink-0 items-center gap-3 text-xs">
       {showHostResources ? <ForkHostResources environmentId={props.environmentId} /> : null}
-      <ForkUsageBar layout="header" environmentId={props.environmentId} />
+      <ForkUsageBar environmentId={props.environmentId} />
       <TodoList
         scope={{ kind: "general" }}
         title="General todos"
