@@ -80,6 +80,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
 } from "react";
+import { useAdvanceWaitingChat } from "../fork/advanceWaitingChat";
 import { type AnyRouter, useRouter } from "@tanstack/react-router";
 
 import {
@@ -1465,6 +1466,15 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
       params: buildThreadRouteParams(threadRef),
     });
   };
+
+  useAdvanceWaitingChat({
+    orderedThreadKeys,
+    threadByKey,
+    settledThreadKeys,
+    snoozedThreadKeys,
+    readCurrentThreadKey: () => readRouteThreadKey(router),
+    openThread: navigateToThread,
+  });
 
   const handleThreadFileDrop = async (threadRef: ScopedThreadRef, files: File[]) => {
     const dropId = queuePendingFileDrop({ threadRef, files });
