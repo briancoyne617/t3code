@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
 
 import { toastManager } from "../components/ui/toast";
-import type { Todo } from "./todoModel";
+import type { Todo, TodoOwner } from "./todoModel";
 
 // The fork todo service (fork/todos/server.ts). Stable's page (port 3773) uses 3775; dev uses 3875.
 // Always loopback: the service listens only there, and the page may be opened by a LAN address.
@@ -110,6 +110,10 @@ function subscribe(listener: () => void) {
   return () => listeners.delete(listener);
 }
 
+export function readTodos(): ReadonlyArray<Todo> {
+  return snapshot.todos;
+}
+
 export function useTodos(): TodoSnapshot {
   return useSyncExternalStore(subscribe, () => snapshot);
 }
@@ -132,6 +136,7 @@ function undoToast(title: string) {
 
 export async function addTodo(body: {
   input: string;
+  owner: TodoOwner;
   projectId?: string | null;
   threadId?: string | null;
 }): Promise<Todo | null> {
@@ -147,7 +152,7 @@ export async function addTodo(body: {
 
 export async function patchTodo(
   id: string,
-  body: Partial<Pick<Todo, "status" | "priority" | "projectId" | "threadId">> & {
+  body: Partial<Pick<Todo, "status" | "priority" | "projectId" | "threadId" | "owner">> & {
     input?: string;
     addLink?: string;
     removeLink?: string;

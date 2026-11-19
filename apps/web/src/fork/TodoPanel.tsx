@@ -21,7 +21,14 @@ import { cn } from "../lib/utils";
 import { useThreadShells } from "../state/entities";
 import { buildThreadRouteParams } from "../threadRoutes";
 import { NO_AUTOFILL } from "./noAutofill";
-import { compareTodos, describeDue, nextRecurrence, parseTodoInput, type Todo } from "./todoModel";
+import {
+  compareTodos,
+  describeDue,
+  nextRecurrence,
+  parseTodoInput,
+  type Todo,
+  type TodoOwner,
+} from "./todoModel";
 import { addTodo, patchTodo, redoTodo, undoTodo, useTodos } from "./todoStore";
 
 export type TodoScope =
@@ -98,14 +105,19 @@ function inScope(
 }
 
 /** Open todos in a list, for the button badges. */
-export function useOpenTodoCount(scope: TodoScope): number {
+export function useOpenTodoCounts(scope: TodoScope) {
   const { todos } = useTodos();
-  const shellList = useThreadShells();
+  const shellList = useThreadShells(scope.kind === "project");
   const shells = new Map<string, EnvironmentThreadShell>(
     shellList.map((shell) => [shell.id, shell]),
   );
-  return todos.filter((todo) => todo.status === "open" && inScope(todo, scope, false, shells))
-    .length;
+  const counts = { user: 0, agent: 0, unassigned: 0 };
+  for (const todo of todos) {
+    if (todo.status === "open" && inScope(todo, scope, false, shells)) {
+      counts[todo.owner ?? "unassigned"] += 1;
+    }
+  }
+  return counts;
 }
 
 /** A Todoist-style list: quick add with natural language, priorities, dates, linked chats, undo. */
@@ -120,6 +132,7 @@ export function TodoPanel(props: {
   const [view, setView] = useState<View>("open");
   const [showAll, setShowAll] = useState(false);
   const [draft, setDraft] = useState("");
+  const [draftOwner, setDraftOwner] = useState<TodoOwner>("user");
   const [editing, setEditing] = useState<{ id: string; value: string } | null>(null);
   const nowMinute = useNowMinute();
   const now = new Date(`${nowMinute}:00Z`);
@@ -153,6 +166,7 @@ export function TodoPanel(props: {
     setDraft("");
     await addTodo({
       input,
+      owner: draftOwner,
       projectId:
         scope.kind === "project"
           ? scope.projectId
@@ -236,6 +250,28 @@ export function TodoPanel(props: {
             if (event.key === "Enter") void add();
           }}
         />
+        <label className="flex items-center gap-2 text-xs text-muted-foreground">
+          Assigned to
+          <select
+            aria-label="New todo owner"
+            value={draftOwner}
+            onChange={(event) =>
+              setDraftOwner(event.currentTarget.value === "agent" ? "agent" : "user")
+            }
+            className="rounded border border-input bg-background px-2 py-1 text-foreground"
+          >
+            <option value="user">You</option>
+            <option value="agent">Agent</option>
+          </select>
+          <Button
+            variant="secondary"
+            size="compact"
+            disabled={!draft.trim()}
+            onClick={() => void add()}
+          >
+            Add
+          </Button>
+        </label>
         {preview &&
         (preview.due || preview.priority < 4 || preview.labels.length || preview.recur) ? (
           <div className="flex flex-wrap gap-1 text-2xs text-muted-foreground">
@@ -349,6 +385,28 @@ export function TodoPanel(props: {
                   </button>
                 )}
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-2xs text-muted-foreground">
+                  <label className="flex items-center gap-1 text-foreground">
+                    Owner
+                    <select
+                      aria-label={`Owner of ${todo.text}`}
+                      value={todo.owner ?? ""}
+                      className="rounded border border-input bg-background px-1 py-0.5 text-xs"
+                      onChange={(event) =>
+                        void patchTodo(todo.id, {
+                          owner:
+                            event.currentTarget.value === "user"
+                              ? "user"
+                              : event.currentTarget.value === "agent"
+                                ? "agent"
+                                : null,
+                        })
+                      }
+                    >
+                      <option value="user">You</option>
+                      <option value="agent">Agent</option>
+                      <option value="">Unassigned</option>
+                    </select>
+                  </label>
                   {due ? <span className={DUE_TONE[due.tone]}>{due.label}</span> : null}
                   {todo.recur ? (
                     <span className="flex items-center gap-0.5">

@@ -1,5 +1,5 @@
 import { ForkError } from "../lib/core.ts";
-import type { Todo } from "../../../apps/web/src/fork/todoModel.ts";
+import type { Todo, TodoOwner } from "../../../apps/web/src/fork/todoModel.ts";
 import { findDuplicate } from "../../todos/todoist.ts";
 
 const BASE = process.env.T3_FORK_TODO_URL ?? "http://127.0.0.1:3775";
@@ -27,12 +27,19 @@ function line(todo: Todo): string {
     todo.id.slice(0, 8),
     todo.status === "open" ? "[ ]" : todo.status === "done" ? "[x]" : "[-]",
     todo.priority < 4 ? `p${todo.priority}` : "  ",
+    `[${todo.owner ?? "unassigned"}]`,
     todo.text,
     todo.due ? `(due ${todo.due}${todo.time ? ` ${todo.time}` : ""})` : "",
     todo.recur ?? "",
     ...todo.labels.map((label) => `@${label}`),
   ];
   return bits.filter(Boolean).join(" ");
+}
+
+function parseOwner(owner: string | undefined): TodoOwner | null {
+  if (owner === "user" || owner === "agent") return owner;
+  if (owner === "unassigned") return null;
+  throw new ForkError("owner must be user, agent, or unassigned");
 }
 
 async function find(prefix: string): Promise<Todo> {
@@ -46,7 +53,14 @@ async function find(prefix: string): Promise<Todo> {
 /** fork todo add|list|done|rm|restore|undo|redo — the same list the T3 Code UI shows. */
 export async function todoCommand(
   args: ReadonlyArray<string>,
-  options: { thread?: string; project?: string; all?: boolean; json?: boolean },
+  options: {
+    thread?: string;
+    project?: string;
+    owner?: string;
+    ifUnassigned?: boolean;
+    all?: boolean;
+    json?: boolean;
+  },
 ): Promise<void> {
   const [action = "list", ...rest] = args;
   // Inside a T3 Code chat the shell knows its thread, so an agent's todos land on its own chat.
@@ -60,6 +74,7 @@ export async function todoCommand(
         threadId: options.project && !options.thread ? null : (thread ?? null),
         projectId: options.project ?? null,
         createdBy: process.env.T3CODE_THREAD_ID ? "agent" : "user",
+        owner: parseOwner(options.owner ?? "unassigned"),
       });
       console.log(options.json ? JSON.stringify(todo) : `added ${line(todo)}`);
       return;
@@ -88,6 +103,21 @@ export async function todoCommand(
         console.log(`${line(todo)}\n  ≈ ${line(twin)}\n`);
       }
       if (seen.size === 0) console.log("(no likely duplicates)");
+      return;
+    }
+    case "assign": {
+      const [prefix, owner] = rest;
+      if (!prefix || !owner || rest.length !== 2)
+        throw new ForkError("usage: fork todo assign <id> <user|agent|unassigned>");
+      const assignment = parseOwner(owner);
+      const todo = await find(prefix);
+      const updated = await call<Todo>("PATCH", `/todos/${todo.id}`, {
+        owner: assignment,
+        ...(options.ifUnassigned ? { ifUnassigned: true } : {}),
+      });
+      if ((updated.owner ?? null) !== assignment)
+        throw new ForkError("the todo service did not save ownership; check its version");
+      console.log(options.json ? JSON.stringify(updated) : line(updated));
       return;
     }
     case "done":
@@ -122,7 +152,7 @@ export async function todoCommand(
     }
     default:
       throw new ForkError(
-        `unknown todo action "${action}" (add, list, done, rm, restore, undo, redo, todoist)`,
+        `unknown todo action "${action}" (add, list, assign, done, rm, restore, undo, redo, todoist)`,
       );
   }
 }
