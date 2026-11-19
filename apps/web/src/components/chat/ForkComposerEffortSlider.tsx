@@ -95,7 +95,7 @@ function EffortSlider({ traits: input, disabled, size }: Props & { traits: Trait
           ref={(input) => {
             if (!input || unavailable) return;
             const composer = input.closest("[data-chat-composer-form]");
-            if (!composer) return;
+            if (!(composer instanceof HTMLElement)) return;
             const onKeyDown = (event: KeyboardEvent) => {
               if (event.defaultPrevented || event.isComposing) return;
               if (!event.altKey || !event.shiftKey || event.ctrlKey || event.metaKey) return;
