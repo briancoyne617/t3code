@@ -46,6 +46,12 @@ function EffortSlider({ traits: input, disabled, size }: Props & { traits: Trait
   const promptLocked =
     traits.ultrathinkInBodyText && descriptor.id === traits.primarySelectDescriptor?.id;
   const unavailable = disabled || promptLocked;
+  const selectIndex = (next: number) => {
+    const choice = choices[next];
+    if (!choice || next === index) return;
+    if (descriptor.type === "select") traits.changeSelect(descriptor, choice.id);
+    else traits.changeBoolean(descriptor.id, choice.id === "on");
+  };
   return (
     <Tooltip>
       <TooltipTrigger
@@ -86,16 +92,38 @@ function EffortSlider({ traits: input, disabled, size }: Props & { traits: Trait
           aria-label={descriptor.label}
           aria-valuetext={label}
           className="relative h-7 w-full cursor-pointer appearance-none bg-transparent outline-none disabled:cursor-not-allowed [&::-moz-range-thumb]:size-2.5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-current [&::-moz-range-track]:bg-transparent [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:size-2.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-current focus-visible:rounded-sm focus-visible:outline-2 focus-visible:-outline-offset-2"
-          onChange={(event) => {
-            const choice = choices[event.currentTarget.valueAsNumber];
-            if (!choice) return;
-            if (descriptor.type === "select") traits.changeSelect(descriptor, choice.id);
-            else traits.changeBoolean(descriptor.id, choice.id === "on");
+          ref={(input) => {
+            if (!input || unavailable) return;
+            const composer = input.closest("[data-chat-composer-form]");
+            if (!(composer instanceof HTMLElement)) return;
+            const onKeyDown = (event: KeyboardEvent) => {
+              if (event.defaultPrevented || event.isComposing) return;
+              if (!event.altKey || !event.shiftKey || event.ctrlKey || event.metaKey) return;
+              if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+              const target = event.target;
+              if (
+                target !== input &&
+                !(
+                  target instanceof HTMLElement &&
+                  target.closest('[contenteditable="true"], textarea')
+                )
+              )
+                return;
+              if (input.closest("[inert]") || !input.checkVisibility({ visibilityProperty: true }))
+                return;
+              event.preventDefault();
+              selectIndex(index + (event.key === "ArrowRight" ? 1 : -1));
+            };
+            composer.addEventListener("keydown", onKeyDown, true);
+            return () => composer.removeEventListener("keydown", onKeyDown, true);
           }}
+          aria-keyshortcuts="Alt+Shift+ArrowLeft Alt+Shift+ArrowRight"
+          onChange={(event) => selectIndex(event.currentTarget.valueAsNumber)}
         />
       </TooltipTrigger>
       <TooltipPopup>
         {promptLocked ? ULTRATHINK_IN_BODY_NOTE : `${descriptor.label}: ${label}`}
+        {!unavailable ? <div className="text-muted-foreground">Alt+Shift+← / →</div> : null}
       </TooltipPopup>
     </Tooltip>
   );

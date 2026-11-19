@@ -36,7 +36,7 @@ function Slider(props: {
   ]);
   const [prompt, setPrompt] = useState(props.prompt ?? "");
   return (
-    <>
+    <div data-chat-composer-form>
       <ForkComposerEffortSlider
         disabled={props.disabled ?? false}
         size="sm"
@@ -73,9 +73,10 @@ function Slider(props: {
           onPromptEdit: setPrompt,
         }}
       />
+      <textarea aria-label="Message" />
       <output aria-label="Saved options">{JSON.stringify(options)}</output>
       <output aria-label="Prompt">{prompt}</output>
-    </>
+    </div>
   );
 }
 
@@ -170,4 +171,22 @@ it("keeps prompt-controlled effort accurate and lets a prefix be cleared", async
     <Slider key="body" descriptors={[descriptor]} prompt="Please ultrathink about this" />,
   );
   await expect.element(screen.getByRole("slider")).toBeDisabled();
+});
+
+it("steps effort with Alt+Shift+arrows while focus stays in the message editor", async () => {
+  await using screen = await render(<Slider />, { router: false });
+  const slider = screen.getByRole("slider", { name: "Thinking" });
+  const editor = screen.getByRole("textbox", { name: "Message" });
+  await editor.fill("Keep this draft");
+  await userEvent.keyboard("{Alt>}{Shift>}{ArrowLeft}{/Shift}{/Alt}");
+  await expect.element(slider).toHaveAttribute("aria-valuetext", "Low");
+  await userEvent.keyboard("{Alt>}{Shift>}{ArrowLeft}{/Shift}{/Alt}");
+  await expect.element(slider).toHaveAttribute("aria-valuetext", "Low");
+  await userEvent.keyboard("{Alt>}{Shift>}{ArrowRight}{/Shift}{/Alt}");
+  await expect.element(slider).toHaveAttribute("aria-valuetext", "Medium");
+  await expect.element(editor).toHaveFocus();
+  await expect.element(editor).toHaveValue("Keep this draft");
+  await screen.rerender(<Slider disabled />);
+  await userEvent.keyboard("{Alt>}{Shift>}{ArrowRight}{/Shift}{/Alt}");
+  await expect.element(slider).toHaveAttribute("aria-valuetext", "Medium");
 });
