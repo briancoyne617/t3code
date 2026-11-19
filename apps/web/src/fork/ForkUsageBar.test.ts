@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { visibleUsageRows } from "./ForkUsageBar";
+import { visibleUsageRows, windowTimeLeftFraction } from "./ForkUsageBar";
 
 const window = { id: "5h", kind: "session", label: "5h", usedPercent: 10 } as const;
 const limits = (windows: ReadonlyArray<typeof window>) => ({
@@ -20,5 +20,31 @@ describe("visibleUsageRows", () => {
     const managed = { enabled: true, driver: "codex", usageLimits: limits([]) };
     const off = { enabled: false, driver: "codex", usageLimits: limits([window]) };
     expect(visibleUsageRows([managed, off] as never[])).toEqual([managed]);
+  });
+});
+
+describe("windowTimeLeftFraction", () => {
+  const now = Date.parse("2026-11-19T12:00:00Z");
+
+  it("uses 5 hours and a week when the window length is not reported", () => {
+    const session = { kind: "session", resetsAt: "2026-11-19T13:00:00Z" } as const;
+    expect(windowTimeLeftFraction(session, now)).toBeCloseTo(0.2);
+    const weekly = { kind: "weekly", resetsAt: "2026-11-22T12:00:00Z" } as const;
+    expect(windowTimeLeftFraction(weekly, now)).toBeCloseTo(3 / 7);
+  });
+
+  it("prefers the reported length and clamps to the window", () => {
+    const window = { kind: "other", resetsAt: "2026-11-19T13:00:00Z", windowDurationMins: 120 };
+    expect(windowTimeLeftFraction(window as never, now)).toBeCloseTo(0.5);
+    expect(windowTimeLeftFraction({ kind: "session", resetsAt: "2026-11-19T11:00:00Z" }, now)).toBe(
+      0,
+    );
+    expect(windowTimeLeftFraction({ kind: "session", resetsAt: "2026-11-20T12:00:00Z" }, now)).toBe(
+      1,
+    );
+    expect(
+      windowTimeLeftFraction({ kind: "other", resetsAt: "2026-11-19T13:00:00Z" }, now),
+    ).toBeNull();
+    expect(windowTimeLeftFraction({ kind: "session" }, now)).toBeNull();
   });
 });

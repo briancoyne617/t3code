@@ -27,13 +27,17 @@ export function ForkHeaderTools() {
   );
 }
 
+// The header's right padding made room for panel toggles this fork removed; let the tools reach the edge.
+const HEADER_CSS = "div:has(> [data-fork-chat-header-tools]) { padding-right: 0.25rem; }";
+
 /** Top-right of the chat header: provider limits, optional host usage and the general todo list. */
 export function ForkChatHeaderTools(props: { environmentId: EnvironmentId }) {
   const [showHostResources] = useForkHostResourcesVisibility();
   return (
-    <div className="ml-auto flex min-w-0 max-w-[60%] shrink items-center gap-3 text-xs">
+    <div data-fork-chat-header-tools className="ml-auto flex shrink-0 items-center gap-3 text-xs">
+      <style>{HEADER_CSS}</style>
       {showHostResources ? <ForkHostResources environmentId={props.environmentId} /> : null}
-      <ForkUsageBar layout="header" environmentId={props.environmentId} />
+      <ForkUsageBar environmentId={props.environmentId} />
       <TodoList
         scope={{ kind: "general" }}
         title="General todos"
