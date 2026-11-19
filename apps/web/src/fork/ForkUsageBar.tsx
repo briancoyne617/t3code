@@ -69,10 +69,10 @@ export function ForkUsageBar(props: { environmentId?: EnvironmentId; layout?: "h
     <div
       aria-label="Provider usage limits"
       className={cn(
-        "flex flex-col gap-0.5 text-2xs leading-tight tabular-nums",
+        "flex flex-col gap-0.5 leading-tight tabular-nums",
         props.layout === "header"
-          ? "hidden min-w-0 shrink flex-row items-center gap-x-4 overflow-hidden whitespace-nowrap sm:flex"
-          : "px-3 pb-1",
+          ? "hidden min-w-0 shrink flex-row items-center gap-x-3 overflow-hidden whitespace-nowrap text-xs sm:flex"
+          : "px-3 pb-1 text-2xs",
       )}
     >
       {rows.map((provider) => (
@@ -81,8 +81,10 @@ export function ForkUsageBar(props: { environmentId?: EnvironmentId; layout?: "h
             render={
               <div
                 className={cn(
-                  "flex items-baseline gap-x-2",
-                  props.layout === "header" ? "shrink-0 flex-nowrap" : "flex-wrap",
+                  "flex items-baseline",
+                  props.layout === "header"
+                    ? "shrink-0 flex-nowrap gap-x-1.5"
+                    : "flex-wrap gap-x-2",
                 )}
               />
             }
@@ -98,7 +100,12 @@ export function ForkUsageBar(props: { environmentId?: EnvironmentId; layout?: "h
                 aria-label={`${window.label}: ${Math.round(window.usedPercent)}% used`}
               >
                 {windowLabel(window)} {Math.round(window.usedPercent)}%
-                {window.resetsAt ? ` · ${timeLeft(window.resetsAt, now)}` : ""}
+                {window.resetsAt ? (
+                  // Reset times drop first when the header is narrow (half a screen).
+                  <span className={props.layout === "header" ? "hidden xl:inline" : undefined}>
+                    {` · ${timeLeft(window.resetsAt, now)}`}
+                  </span>
+                ) : null}
               </span>
             ))}
             {provider.usageLimits?.unavailable && provider.usageLimits.windows.length > 0 ? (

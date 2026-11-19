@@ -45,31 +45,25 @@ export function ForkContextWindowBar(props: {
           <button
             type="button"
             data-context-window-bar
-            className="flex h-9 w-36 min-w-32 shrink items-center rounded-md border border-foreground/25 bg-foreground/5 px-2 text-foreground hover:bg-foreground/10 focus-visible:outline-2 focus-visible:outline-ring"
+            className="relative flex h-5 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted-foreground/15 text-foreground/80 hover:bg-muted-foreground/25 focus-visible:outline-2 focus-visible:outline-ring"
             aria-label={
               usage.maxTokens !== null && usedPercentage
                 ? `Context window ${usedPercentage} used`
                 : `Context window ${formatContextWindowTokens(usage.usedTokens)} tokens used`
             }
           >
-            <span className="relative flex w-full min-w-0 flex-col items-center overflow-hidden rounded bg-muted-foreground/15">
-              {usage.maxTokens !== null ? (
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-y-0 left-0 opacity-25 transition-[width,background-color] duration-500 ease-out motion-reduce:transition-none"
-                  style={{ width: `${normalizedPercentage}%`, backgroundColor: usageColor }}
-                />
-              ) : null}
-              <span className="relative whitespace-nowrap text-2xs font-semibold tabular-nums">
-                Context {usedPercentage ? `${usedPercentage} used` : "usage"}
-              </span>
-              <span className="relative whitespace-nowrap text-2xs tabular-nums">
-                {formatContextWindowTokens(usage.usedTokens)}
-                {usage.maxTokens !== null
-                  ? `/${formatContextWindowTokens(usage.maxTokens ?? null)}`
-                  : null}{" "}
-                tokens
-              </span>
+            {usage.maxTokens !== null ? (
+              <span
+                aria-hidden="true"
+                className="absolute inset-y-0 left-0 opacity-40 transition-[width,background-color] duration-500 ease-out motion-reduce:transition-none"
+                style={{ width: `${normalizedPercentage}%`, backgroundColor: usageColor }}
+              />
+            ) : null}
+            <span className="relative whitespace-nowrap text-2xs tabular-nums">
+              {formatContextWindowTokens(usage.usedTokens)}
+              {usage.maxTokens !== null
+                ? `/${formatContextWindowTokens(usage.maxTokens ?? null)}`
+                : null}
             </span>
           </button>
         }
@@ -165,7 +159,7 @@ export function ForkContextWindowBar(props: {
 /** Reserves the bar's width while the thread loads, so the footer does not jump when it lands. */
 export function ForkContextWindowBarPlaceholder() {
   return (
-    <span aria-hidden="true" className="flex h-9 w-36 min-w-32 shrink justify-end">
+    <span aria-hidden="true" className="flex h-5 w-20 shrink-0 justify-end">
       <ContextWindowMeterPlaceholder />
     </span>
   );
