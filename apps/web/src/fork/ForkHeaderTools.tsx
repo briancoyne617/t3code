@@ -31,7 +31,7 @@ export function ForkHeaderTools() {
 export function ForkChatHeaderTools(props: { environmentId: EnvironmentId }) {
   const [showHostResources] = useForkHostResourcesVisibility();
   return (
-    <div className="ml-auto flex max-w-[60%] shrink-0 items-center gap-1">
+    <div className="ml-auto flex min-w-0 max-w-[60%] shrink items-center gap-3 text-xs">
       {showHostResources ? <ForkHostResources environmentId={props.environmentId} /> : null}
       <ForkUsageBar layout="header" environmentId={props.environmentId} />
       <TodoList
@@ -39,7 +39,7 @@ export function ForkChatHeaderTools(props: { environmentId: EnvironmentId }) {
         title="General todos"
         hotkeyLabel="Alt+G"
         matchesHotkey={matchesAltG}
-        trigger={<Button variant="ghost" size="compact" />}
+        trigger={<Button variant="ghost" size="compact" className="shrink-0" />}
         triggerLabel="Todo"
         side="bottom"
       />

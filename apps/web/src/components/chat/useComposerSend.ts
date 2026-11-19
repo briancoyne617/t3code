@@ -488,6 +488,8 @@ export function useComposerSend(input: ComposerSendInput) {
     }
     const sendCtx = composerRef.current?.getSendContext();
     const notifySuccessfulReply = () => {
+      // Fork: /compact keeps you in the chat you are compacting.
+      if (/^\s*\/compact\b/i.test(promptAtSend)) return;
       if (isServerThread && submissionIntent === "foreground") {
         notifyWaitingChatAfterSend(scopeThreadRef(environmentId, activeThread.id));
       }
