@@ -4,7 +4,7 @@ import { page } from "vite-plus/test/browser";
 
 import { render } from "../../test/render";
 import { openCommandPalette } from "../commandPaletteBus";
-import { dispatchCommandPalette, useCommandPaletteStore } from "../commandPaletteStore";
+import { useCommandPaletteStore } from "../commandPaletteStore";
 import { makeThreadFixture } from "../test-fixtures";
 import type { Project, Thread } from "../types";
 import { CommandPalette } from "./CommandPalette";
@@ -46,11 +46,11 @@ describe("CommandPalette open intents", () => {
     await expect.element(input).toHaveValue("acme");
   });
 
-  it("finds developer tools in the file picker without a project", async () => {
+  it("finds developer tools in the command palette", async () => {
     setup();
     await using _screen = await render(<CommandPalette>{null}</CommandPalette>);
-    dispatchCommandPalette({ _tag: "ToggleMode", mode: "files" });
-    const input = page.getByPlaceholder("Search files or developer tools…");
+    openCommandPalette({});
+    const input = page.getByPlaceholder("Search commands, projects, and threads...");
 
     await input.fill("hammer");
     await expect.element(page.getByRole("option", { name: /Open Dev|Open Stable/ })).toBeVisible();

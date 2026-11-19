@@ -2,6 +2,7 @@ import { BotIcon, ListTodoIcon } from "lucide-react";
 import { type ReactElement, useEffect, useState } from "react";
 
 import { RenderErrorBoundary } from "../components/RenderErrorBoundary";
+import { cn } from "../lib/utils";
 import { Popover, PopoverPopup, PopoverTrigger } from "../components/ui/popover";
 import {
   TodoPanel,
@@ -94,9 +95,16 @@ function TodoListButton(props: {
             {counts.agent}
             <Elsewhere count={elsewhere.agent} who="agent" />
           </span>
-          {counts.unassigned > 0 ? (
-            <span className="text-warning" aria-label={`${counts.unassigned} need assignment`}>
+          {counts.unassigned + elsewhere.unassigned > 0 ? (
+            <span
+              className={cn(
+                "inline-flex items-center",
+                counts.unassigned > 0 ? "text-warning" : "text-muted-foreground/70",
+              )}
+              aria-label={`${counts.unassigned} need assignment`}
+            >
               ?
+              <Elsewhere count={elsewhere.unassigned} who="no one yet" />
             </span>
           ) : null}
         </span>

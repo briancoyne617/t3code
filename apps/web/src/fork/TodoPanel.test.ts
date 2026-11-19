@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 
 import type { Todo } from "./todoModel";
-import { countOtherProjectTodos } from "./TodoPanel";
+import { countOtherProjectTodos, matchesOwnerFilter, nextOwnerFilter } from "./TodoPanel";
 
 function todo(id: string, fields: Partial<Todo>): Todo {
   return {
@@ -62,5 +62,21 @@ describe("countOtherProjectTodos", () => {
     expect(
       countOtherProjectTodos(todos, { kind: "thread", threadId: "here", projectId: null }, shells),
     ).toEqual(none);
+  });
+});
+
+describe("owner filter", () => {
+  it("cycles Both, Mine, Agent's", () => {
+    expect(nextOwnerFilter("both")).toBe("mine");
+    expect(nextOwnerFilter("mine")).toBe("agent");
+    expect(nextOwnerFilter("agent")).toBe("both");
+  });
+
+  it("keeps unassigned todos under Mine", () => {
+    expect(matchesOwnerFilter({ owner: null }, "mine")).toBe(true);
+    expect(matchesOwnerFilter({ owner: "user" }, "mine")).toBe(true);
+    expect(matchesOwnerFilter({ owner: "agent" }, "mine")).toBe(false);
+    expect(matchesOwnerFilter({ owner: null }, "agent")).toBe(false);
+    expect(matchesOwnerFilter({ owner: "agent" }, "both")).toBe(true);
   });
 });

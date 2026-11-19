@@ -377,11 +377,12 @@ function CommandPaletteDialog(props: {
       }}
     >
       {props.mode === "files" ? (
-        <ProjectFilePicker setOpen={props.setOpen} developerActions={props.developerActions} />
+        <ProjectFilePicker setOpen={props.setOpen} />
       ) : props.mode === "content" ? (
         <ProjectContentSearchDialog onOpenChange={props.setOpen} />
       ) : (
         <OpenCommandPaletteDialog
+          developerActions={props.developerActions}
           key={props.session}
           openIntent={props.openIntent}
           setOpen={props.setOpen}
@@ -394,6 +395,7 @@ function CommandPaletteDialog(props: {
 }
 
 function OpenCommandPaletteDialog(props: {
+  readonly developerActions: ReadonlyArray<CommandPaletteActionItem>;
   readonly openIntent: CommandPaletteOpenIntent | null;
   readonly setOpen: (open: boolean) => void;
   readonly openChildSearch: (
@@ -1459,6 +1461,7 @@ function OpenCommandPaletteDialog(props: {
     });
   }
 
+  actionItems.push(...props.developerActions);
   actionItems.push({
     kind: "action",
     value: "action:open-file-picker",
