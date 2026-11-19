@@ -73,7 +73,7 @@ function Slider(props: {
           onPromptEdit: setPrompt,
         }}
       />
-      <textarea aria-label="Message" />
+      <div role="textbox" aria-label="Message" data-testid="composer-editor" contentEditable />
       <output aria-label="Saved options">{JSON.stringify(options)}</output>
       <output aria-label="Prompt">{prompt}</output>
     </div>
@@ -173,20 +173,20 @@ it("keeps prompt-controlled effort accurate and lets a prefix be cleared", async
   await expect.element(screen.getByRole("slider")).toBeDisabled();
 });
 
-it("steps effort with Alt+Shift+arrows while focus stays in the message editor", async () => {
+it("steps effort with Ctrl+arrows while focus stays in the message editor", async () => {
   await using screen = await render(<Slider />, { router: false });
   const slider = screen.getByRole("slider", { name: "Thinking" });
   const editor = screen.getByRole("textbox", { name: "Message" });
   await editor.fill("Keep this draft");
-  await userEvent.keyboard("{Alt>}{Shift>}{ArrowLeft}{/Shift}{/Alt}");
+  await userEvent.keyboard("{Control>}{ArrowLeft}{/Control}");
   await expect.element(slider).toHaveAttribute("aria-valuetext", "Low");
-  await userEvent.keyboard("{Alt>}{Shift>}{ArrowLeft}{/Shift}{/Alt}");
+  await userEvent.keyboard("{Control>}{ArrowLeft}{/Control}");
   await expect.element(slider).toHaveAttribute("aria-valuetext", "Low");
-  await userEvent.keyboard("{Alt>}{Shift>}{ArrowRight}{/Shift}{/Alt}");
+  await userEvent.keyboard("{Control>}{ArrowRight}{/Control}");
   await expect.element(slider).toHaveAttribute("aria-valuetext", "Medium");
   await expect.element(editor).toHaveFocus();
-  await expect.element(editor).toHaveValue("Keep this draft");
+  await expect.element(editor).toHaveTextContent("Keep this draft");
   await screen.rerender(<Slider disabled />);
-  await userEvent.keyboard("{Alt>}{Shift>}{ArrowRight}{/Shift}{/Alt}");
+  await userEvent.keyboard("{Control>}{ArrowRight}{/Control}");
   await expect.element(slider).toHaveAttribute("aria-valuetext", "Medium");
 });

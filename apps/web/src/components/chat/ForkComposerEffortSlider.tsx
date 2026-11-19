@@ -3,7 +3,10 @@ import {
   selectableProviderOptionChoices,
 } from "@t3tools/client-runtime/model-traits";
 
+import { useRef } from "react";
+
 import { cn } from "~/lib/utils";
+import { toastManager } from "../ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import type { ComposerControlSize } from "./ComposerControl";
 import {
@@ -20,6 +23,7 @@ type Props = {
 
 function EffortSlider({ traits: input, disabled, size }: Props & { traits: TraitsSelectionInput }) {
   const traits = useTraitsSelection(input);
+  const feedbackToast = useRef<string | null>(null);
   const descriptor = traits.descriptors.find(isReasoningControl);
   if (!descriptor || traits.modelIsUnavailable) return null;
   const current =
@@ -94,36 +98,39 @@ function EffortSlider({ traits: input, disabled, size }: Props & { traits: Trait
           className="relative h-7 w-full cursor-pointer appearance-none bg-transparent outline-none disabled:cursor-not-allowed [&::-moz-range-thumb]:size-2.5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-current [&::-moz-range-track]:bg-transparent [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:size-2.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-current focus-visible:rounded-sm focus-visible:outline-2 focus-visible:-outline-offset-2"
           ref={(input) => {
             if (!input || unavailable) return;
-            const composer = input.closest("[data-chat-composer-form]");
-            if (!(composer instanceof HTMLElement)) return;
             const onKeyDown = (event: KeyboardEvent) => {
               if (event.defaultPrevented || event.isComposing) return;
-              if (!event.altKey || !event.shiftKey || event.ctrlKey || event.metaKey) return;
+              if (!event.ctrlKey || event.altKey || event.shiftKey || event.metaKey) return;
               if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
               const target = event.target;
-              if (
-                target !== input &&
-                !(
-                  target instanceof HTMLElement &&
-                  target.closest('[contenteditable="true"], textarea')
-                )
-              )
-                return;
+              if (!(target instanceof Element)) return;
+              const composer = input.closest("[data-chat-composer-form]");
+              if (!composer || target.closest("[data-chat-composer-form]") !== composer) return;
+              if (target !== input && !target.closest('[data-testid="composer-editor"]')) return;
               if (input.closest("[inert]") || !input.checkVisibility({ visibilityProperty: true }))
                 return;
+
               event.preventDefault();
-              selectIndex(index + (event.key === "ArrowRight" ? 1 : -1));
+              const next = index + (event.key === "ArrowRight" ? 1 : -1);
+              selectIndex(next);
+              if (feedbackToast.current !== null) toastManager.close(feedbackToast.current);
+              feedbackToast.current = toastManager.add({
+                type: "info",
+                title: `${descriptor.label}: ${choices[next]?.label ?? label}`,
+                timeout: 1200,
+              });
             };
-            composer.addEventListener("keydown", onKeyDown, true);
-            return () => composer.removeEventListener("keydown", onKeyDown, true);
+            const target = input.ownerDocument.defaultView;
+            target?.addEventListener("keydown", onKeyDown, true);
+            return () => target?.removeEventListener("keydown", onKeyDown, true);
           }}
-          aria-keyshortcuts="Alt+Shift+ArrowLeft Alt+Shift+ArrowRight"
+          aria-keyshortcuts="Control+ArrowLeft Control+ArrowRight"
           onChange={(event) => selectIndex(event.currentTarget.valueAsNumber)}
         />
       </TooltipTrigger>
       <TooltipPopup>
         {promptLocked ? ULTRATHINK_IN_BODY_NOTE : `${descriptor.label}: ${label}`}
-        {!unavailable ? <div className="text-muted-foreground">Alt+Shift+← / →</div> : null}
+        {!unavailable ? <div className="text-muted-foreground">Ctrl+← / →</div> : null}
       </TooltipPopup>
     </Tooltip>
   );

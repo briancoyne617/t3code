@@ -31,8 +31,8 @@ import { isTypingTarget } from "./TodoList";
 
 const FORK_SHORTCUTS = [
   { label: "Fork: open this shortcuts screen", key: "?" },
-  { label: "Decrease composer effort", key: "alt+shift+←" },
-  { label: "Increase composer effort", key: "alt+shift+→" },
+  { label: "Decrease composer effort", key: "ctrl+←" },
+  { label: "Increase composer effort", key: "ctrl+→" },
   { label: "Fork: general todo list", key: "alt+g" },
   { label: "Fork: project todo list", key: "alt+t" },
   { label: "Fork: this chat's todo list (composer tab, top right)", key: "alt+j" },
