@@ -4,6 +4,7 @@ import {
   type ModelSelection,
   type OrchestrationV2DomainEvent,
   type ServerProvider,
+  type ThreadId,
 } from "@t3tools/contracts";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
@@ -113,78 +114,83 @@ const makeSweep = Effect.gen(function* () {
   const orchestrator = yield* Orchestrator.OrchestratorV2;
   const registry = yield* ProviderRegistry.ProviderRegistry;
   const handled = new Set<string>();
+  // Chats touched by recent events; checked on the next sweep. Upstream's recovery query
+  // drops a chat once it arms a retry, so the fork watches events instead of that query.
+  const pending = new Set<ThreadId>();
   const due = DueHint.make();
   yield* forkParked(
-    Stream.runForEach(orchestrator.streamDomainEvents, (event) =>
-      affectsLimitSwitch(event) ? due.invalidate : Effect.void,
-    ),
+    Stream.runForEach(orchestrator.streamDomainEvents, (event) => {
+      if (!affectsLimitSwitch(event)) return Effect.void;
+      pending.add(event.threadId);
+      return due.invalidate;
+    }),
   );
+  // Chats already limited when the server started.
+  const seed = yield* projections
+    .getLimitRecoveryCandidates({ now: yield* DateTime.now, autoResume: true, snooze: true })
+    .pipe(Effect.orElseSucceed(() => []));
+  for (const thread of seed) pending.add(thread.id);
+
+  const switchThread = Effect.fn("LimitModelSwitch.switchThread")(function* (threadId: ThreadId) {
+    const shell = yield* projections.getThreadShell(threadId);
+    const runId = shell?.latestRunId;
+    if (
+      !shell ||
+      !runId ||
+      shell.status !== "failed" ||
+      shell.lastErrorClass !== "usage_limit" ||
+      shell.archivedAt !== null ||
+      shell.settledOverride === "settled" ||
+      shell.pendingRuntimeRequest !== null
+    )
+      return;
+    const key = `${threadId}:${runId}`;
+    if (handled.has(key)) return;
+    handled.add(key);
+    const providers = yield* registry.getProviders;
+    const current = shell.modelSelection;
+    const sourceDriver =
+      providers.find((provider) => provider.instanceId === current.instanceId)?.driver ?? "";
+    const next = counterpartModelSelection(current, sourceDriver, providers);
+    if (next === null) {
+      yield* Effect.logDebug("fork.limit-model-switch.no-counterpart", {
+        threadId,
+        from: current.model,
+      });
+      return;
+    }
+    const id = `fork-limit-switch:${threadId}:${runId}`;
+    yield* threads.dispatch({
+      type: "message.dispatch",
+      commandId: CommandId.make(id),
+      messageId: MessageId.make(id),
+      threadId,
+      text: `Usage limit reached on ${current.model}; switched to ${next.model}. Continue where you left off.`,
+      attachments: [],
+      modelSelection: next,
+      dispatchMode: { type: "start_immediately" },
+      createdBy: "user",
+      creationSource: "server",
+    });
+    yield* Effect.logInfo("fork.limit-model-switch.switched", {
+      threadId,
+      from: current.model,
+      to: next.model,
+    });
+  });
+
   return Effect.fn("LimitModelSwitch.sweep")(function* () {
-    const now = yield* DateTime.now;
-    const nowMs = DateTime.toEpochMillis(now);
+    const nowMs = DateTime.toEpochMillis(yield* DateTime.now);
     if (yield* due.isIdle(nowMs)) return;
     const readVersion = yield* due.version;
-    const candidates = yield* projections.getLimitRecoveryCandidates({
-      now,
-      autoResume: true,
-      snooze: false,
-    });
-    for (const thread of candidates) {
-      const runId = thread.latestRunId;
-      if (
-        thread.status !== "failed" ||
-        thread.lastErrorClass !== "usage_limit" ||
-        !runId ||
-        thread.archivedAt !== null ||
-        thread.settledOverride === "settled" ||
-        thread.pendingRuntimeRequest !== null
-      )
-        continue;
-      const key = `${thread.id}:${runId}`;
-      if (handled.has(key)) continue;
-      yield* Effect.gen(function* () {
-        const shell = yield* projections.getThreadShell(thread.id);
-        if (shell === null) return;
-        const providers = yield* registry.getProviders;
-        const current = shell.modelSelection;
-        const sourceDriver =
-          providers.find((provider) => provider.instanceId === current.instanceId)?.driver ?? "";
-        const next = counterpartModelSelection(current, sourceDriver, providers);
-        if (next === null) {
-          yield* Effect.logDebug("fork.limit-model-switch.no-counterpart", {
-            threadId: thread.id,
-            from: current.model,
-          });
-          return;
-        }
-        const id = `fork-limit-switch:${thread.id}:${runId}`;
-        yield* threads.dispatch({
-          type: "message.dispatch",
-          commandId: CommandId.make(id),
-          messageId: MessageId.make(id),
-          threadId: thread.id,
-          text: `Usage limit reached on ${current.model}; switched to ${next.model}. Continue where you left off.`,
-          attachments: [],
-          modelSelection: next,
-          usageLimitContinuationOfRunId: runId,
-          dispatchMode: { type: "start_immediately" },
-          createdBy: "user",
-          creationSource: "server",
-        });
-        yield* Effect.logInfo("fork.limit-model-switch.switched", {
-          threadId: thread.id,
-          from: current.model,
-          to: next.model,
-        });
-      }).pipe(
+    const batch = [...pending];
+    pending.clear();
+    for (const threadId of batch) {
+      yield* switchThread(threadId).pipe(
         Effect.catchCause((cause) =>
-          Effect.logWarning("fork.limit-model-switch.dispatch-failed", {
-            threadId: thread.id,
-            cause,
-          }),
+          Effect.logWarning("fork.limit-model-switch.dispatch-failed", { threadId, cause }),
         ),
       );
-      handled.add(key);
     }
     yield* due.record(readVersion, Infinity, nowMs);
   });
