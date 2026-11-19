@@ -1,11 +1,10 @@
 import * as NodeChildProcess from "node:child_process";
-import * as NodeEvents from "node:events";
 import * as NodeFSP from "node:fs/promises";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import * as NodeReadline from "node:readline";
 
-import { expect, it } from "vitest";
+import { expect, it } from "vite-plus/test";
 
 it("assigns legacy todos, keeps ownership through edits and undo, and protects prior assignments", async () => {
   const dir = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "fork-todos-"));
@@ -21,12 +20,14 @@ it("assigns legacy todos, keeps ownership through edits and undo, and protects p
       stdio: ["ignore", "pipe", "inherit"],
     },
   );
-  const exited = NodeEvents.once(child, "exit");
+  const exited = new Promise<void>((resolve) => child.once("exit", () => resolve()));
   const lines = NodeReadline.createInterface({ input: child.stdout });
   try {
     const origin = await Promise.race([
-      NodeEvents.once(lines, "line").then(
-        ([line]) => /^fork todos on (http:\/\/127\.0\.0\.1:\d+)/.exec(line)?.[1],
+      new Promise<string | undefined>((resolve) =>
+        lines.once("line", (line) =>
+          resolve(/^fork todos on (http:\/\/127\.0\.0\.1:\d+)/.exec(line)?.[1]),
+        ),
       ),
       exited.then(() => undefined),
     ]);
