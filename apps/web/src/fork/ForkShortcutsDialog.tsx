@@ -34,7 +34,6 @@ const FORK_SHORTCUTS = [
   { label: "Decrease composer effort", key: "alt+shift+←" },
   { label: "Increase composer effort", key: "alt+shift+→" },
   { label: "Fork: general todo list", key: "alt+g" },
-  { label: "Fork: project todo list", key: "alt+t" },
   { label: "Fork: this chat's todo list (composer tab, top right)", key: "alt+j" },
   { label: "Fork: undo the last todo change (outside text fields)", key: "ctrl+z" },
   { label: "Fork: redo a todo change", key: "ctrl+shift+z / ctrl+y" },
