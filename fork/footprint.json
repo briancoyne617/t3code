@@ -46,7 +46,7 @@
   "apps/web/src/components/chat/PanelLayoutControls.tsx": 16,
   "apps/web/src/components/chat/restingComposerControlsMeasurement.ts": 8,
   "apps/web/src/components/chat/RightPanelSurfaceContent.tsx": 2,
-  "apps/web/src/components/chat/useComposerSend.ts": 44,
+  "apps/web/src/components/chat/useComposerSend.ts": 46,
   "apps/web/src/components/ChatView.tsx": 56,
   "apps/web/src/components/CommandPalette.browser.test.tsx": 14,
   "apps/web/src/components/CommandPalette.tsx": 8,
