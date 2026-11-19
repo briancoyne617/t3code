@@ -202,8 +202,9 @@ const EMPTY_THREAD_STATE: ThreadRightPanelState = {
   surfaces: [],
 };
 
+// Fork: the thread details card starts hidden; Ctrl+Alt+B (threadPanel.toggle) shows it.
 const DEFAULT_THREAD_PANEL_VISIBILITY: ThreadPanelVisibility = {
-  inlineOpen: true,
+  inlineOpen: false,
   popoverOpen: false,
 };
 

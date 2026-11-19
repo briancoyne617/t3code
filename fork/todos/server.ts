@@ -69,6 +69,23 @@ function writeHidden(rules: unknown[]): void {
   NodeFS.renameSync(`${hiddenFile}.tmp`, hiddenFile);
 }
 
+// Chat priority flags from the sidebar (apps/web/src/fork/chatFlags.ts): { [threadId]: 1 | 2 | 3 }.
+const flagsFile = NodePath.join(NodePath.dirname(dataFile), "chat-flags.json");
+function readFlags(): Record<string, number> {
+  try {
+    const flags: unknown = JSON.parse(NodeFS.readFileSync(flagsFile, "utf8"));
+    return flags !== null && typeof flags === "object" && !Array.isArray(flags)
+      ? (flags as Record<string, number>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+function writeFlags(flags: Record<string, number>): void {
+  NodeFS.writeFileSync(`${flagsFile}.tmp`, `${JSON.stringify(flags, null, 2)}\n`);
+  NodeFS.renameSync(`${flagsFile}.tmp`, flagsFile);
+}
+
 const stateDb =
   values["stable-db"] ??
   NodePath.join(process.env.HOME ?? ".", ".t3-stable", "userdata", "statev2.sqlite");
@@ -426,6 +443,19 @@ async function handle(req: NodeHttp.IncomingMessage, res: NodeHttp.ServerRespons
       if (!Array.isArray(body.rules)) throw new HttpError(400, "rules must be an array");
       writeHidden(body.rules);
       return json(200, { rules: body.rules });
+    }
+  }
+  if (path === "/api/flags") {
+    if (method === "GET") return json(200, { flags: readFlags() });
+    if (method === "POST") {
+      const body = await readBody<{ flags?: unknown }>(req);
+      if (body.flags === null || typeof body.flags !== "object" || Array.isArray(body.flags))
+        throw new HttpError(400, "flags must be an object");
+      const flags = Object.fromEntries(
+        Object.entries(body.flags).filter(([, flag]) => flag === 1 || flag === 2 || flag === 3),
+      ) as Record<string, number>;
+      writeFlags(flags);
+      return json(200, { flags });
     }
   }
   if (path === "/api/todoist/config" && method === "POST") {

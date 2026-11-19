@@ -29,7 +29,7 @@ import { classifyShortcut, suggestReplacement } from "./browserShortcuts";
 import { NO_AUTOFILL } from "./noAutofill";
 import { isTypingTarget } from "./TodoList";
 
-const FORK_SHORTCUTS = [
+export const FORK_SHORTCUTS = [
   { label: "Fork: open this shortcuts screen", key: "?" },
   { label: "Decrease composer effort", key: "alt+shift+←" },
   { label: "Increase composer effort", key: "alt+shift+→" },
@@ -42,10 +42,11 @@ const FORK_SHORTCUTS = [
       "Fork: hide any part of the UI (↑/↓ bigger/smaller, Enter hides; undo in Settings → Appearance)",
     key: "alt+right-click",
   },
+  { label: "Fork: keybinding cheat sheet", key: "ctrl+k" },
   { label: "File finder (VS Code's Ctrl+P)", key: "ctrl+p" },
   {
-    label: "Command palette (VS Code's Ctrl+Shift+P; Firefox keeps that key, use F1 or Ctrl+K)",
-    key: "f1 / ctrl+k",
+    label: "Command palette (VS Code's Ctrl+Shift+P; Firefox keeps that key, use F1)",
+    key: "ctrl+shift+p / f1",
   },
 ];
 

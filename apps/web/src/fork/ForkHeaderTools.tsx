@@ -1,9 +1,11 @@
 import type { EnvironmentId } from "@t3tools/contracts";
 
 import { Button } from "../components/ui/button";
+import { ForkKeybindCheatSheet } from "./ForkKeybindCheatSheet";
 import { ForkShortcutsDialog } from "./ForkShortcutsDialog";
 import { ForkHostResources, useForkHostResourcesVisibility } from "./ForkHostResources";
 import { ForkUsageBar } from "./ForkUsageBar";
+import { installChatFlags } from "./chatFlags";
 import { installHiddenUi } from "./hiddenUi";
 import { installHidePicker } from "./hidePicker";
 import { installNoAutofill } from "./noAutofill";
@@ -12,6 +14,7 @@ import { TodoList } from "./TodoList";
 
 installNoAutofill();
 installHiddenUi();
+installChatFlags();
 installHidePicker();
 installTerminalStyle();
 
@@ -23,6 +26,7 @@ export function ForkHeaderTools() {
   return (
     <div className="ml-1 hidden items-center md:flex">
       <ForkShortcutsDialog />
+      <ForkKeybindCheatSheet />
     </div>
   );
 }

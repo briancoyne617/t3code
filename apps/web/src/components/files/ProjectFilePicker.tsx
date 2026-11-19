@@ -8,7 +8,7 @@ import { primaryServerKeybindingsAtom } from "~/state/server";
 
 import { PierreEntryIcon } from "../chat/PierreEntryIcon";
 import { CommandPaletteContent } from "../CommandPaletteContent";
-import { filterCommandPaletteGroups, type CommandPaletteActionItem } from "../CommandPalette.logic";
+import { type CommandPaletteActionItem } from "../CommandPalette.logic";
 import { CommandPaletteResults } from "../CommandPaletteResults";
 import {
   getProjectFilePickerMatches,
@@ -17,7 +17,6 @@ import {
 import { useProjectFilePickerQuery } from "./projectFilesQueryState";
 
 interface ProjectFilePickerProps {
-  readonly developerActions: ReadonlyArray<CommandPaletteActionItem>;
   readonly setOpen: (open: boolean) => void;
 }
 
@@ -51,15 +50,28 @@ function getEmptyStateMessage(query: string, error: string | null, isPending: bo
   return isSearching ? "No matching files." : "No files found.";
 }
 
-function OpenProjectFilePicker(
-  props: ProjectFilePickerProps & {
-    target: ActiveProjectTarget;
-    query: string;
-    setQuery: (query: string) => void;
-  },
-) {
+function EmptyProjectFilePicker() {
+  return (
+    <CommandPaletteContent
+      aria-label="File picker"
+      escapeLabel="Back"
+      footerActionLabel="Open file"
+      inputProps={{ disabled: true, placeholder: "Search files…" }}
+      mode="none"
+      testId="project-file-picker"
+      value=""
+    >
+      <div className="py-10 text-center text-sm text-muted-foreground">
+        Open a project to search its files.
+      </div>
+    </CommandPaletteContent>
+  );
+}
+
+function OpenProjectFilePicker(props: ProjectFilePickerProps & { target: ActiveProjectTarget }) {
   const { target } = props;
-  const { query } = props;
+  const [query, setQuery] = useState("");
+  const [highlightedItemValue, setHighlightedItemValue] = useState<string | null>(null);
   const result = useProjectFilePickerQuery(
     target.environmentId,
     target.cwd,
@@ -67,6 +79,7 @@ function OpenProjectFilePicker(
     PROJECT_FILE_PICKER_RESULT_LIMIT,
   );
   const { resolvedTheme } = useTheme();
+  const keybindings = useAtomValue(primaryServerKeybindingsAtom);
   const matches = getProjectFilePickerMatches(result.entries, result.matchedQuery);
   const hasMatchedQuery = /\S/.test(result.matchedQuery);
   const items: CommandPaletteActionItem[] = matches.map((match) => ({
@@ -93,43 +106,15 @@ function OpenProjectFilePicker(
     },
   }));
 
-  return (
-    <ProjectFilePickerContent
-      {...props}
-      items={items}
-      emptyStateMessage={getEmptyStateMessage(query, result.error, result.isPending)}
-    />
-  );
-}
+  const emptyStateMessage = getEmptyStateMessage(query, result.error, result.isPending);
 
-function ProjectFilePickerContent(
-  props: ProjectFilePickerProps & {
-    query: string;
-    setQuery: (query: string) => void;
-    items: CommandPaletteActionItem[];
-    emptyStateMessage: string;
-    target?: ActiveProjectTarget;
-  },
-) {
-  const { query, setQuery, items } = props;
-  const [highlightedItemValue, setHighlightedItemValue] = useState<string | null>(null);
-  const keybindings = useAtomValue(primaryServerKeybindingsAtom);
-  const developerGroups = filterCommandPaletteGroups({
-    activeGroups: [
-      { value: "developer-tools", label: "Developer tools", items: props.developerActions },
-    ],
-    query,
-    isInSubmenu: true,
-    projectSearchItems: [],
-    threadSearchItems: [],
-  });
   return (
     <CommandPaletteContent
       aria-label="File picker"
       autoHighlight="always"
       escapeLabel="Back"
-      footerActionLabel="Select"
-      inputProps={{ placeholder: "Search files or developer tools…" }}
+      footerActionLabel="Open file"
+      inputProps={{ placeholder: "Search files…" }}
       mode="none"
       onItemHighlighted={(value) => {
         setHighlightedItemValue(typeof value === "string" ? value : null);
@@ -143,12 +128,9 @@ function ProjectFilePickerContent(
       value={query}
     >
       <CommandPaletteResults
-        groups={[
-          ...(items.length > 0
-            ? [{ value: "project-files", label: props.target?.projectName ?? "Files", items }]
-            : []),
-          ...developerGroups,
-        ]}
+        groups={
+          items.length > 0 ? [{ value: "project-files", label: target.projectName, items }] : []
+        }
         highlightedItemValue={highlightedItemValue}
         isActionsOnly={false}
         keybindings={keybindings}
@@ -157,7 +139,7 @@ function ProjectFilePickerContent(
           props.setOpen(false);
           void item.run();
         }}
-        emptyStateMessage={props.emptyStateMessage}
+        emptyStateMessage={emptyStateMessage}
       />
     </CommandPaletteContent>
   );
@@ -165,19 +147,10 @@ function ProjectFilePickerContent(
 
 export function ProjectFilePicker(props: ProjectFilePickerProps) {
   const target = useActiveProjectTarget();
-  const [query, setQuery] = useState("");
 
   if (!target) {
-    return (
-      <ProjectFilePickerContent
-        {...props}
-        query={query}
-        setQuery={setQuery}
-        items={[]}
-        emptyStateMessage="Open a project to search its files."
-      />
-    );
+    return <EmptyProjectFilePicker />;
   }
 
-  return <OpenProjectFilePicker {...props} target={target} query={query} setQuery={setQuery} />;
+  return <OpenProjectFilePicker setOpen={props.setOpen} target={target} />;
 }

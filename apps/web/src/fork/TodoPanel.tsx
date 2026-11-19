@@ -2,6 +2,7 @@ import { scopeProjectRef, scopeThreadRef } from "@t3tools/client-runtime/environ
 import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
 import { useNavigate } from "@tanstack/react-router";
 import {
+  BotIcon,
   CheckIcon,
   LinkIcon,
   PlayIcon,
@@ -9,6 +10,8 @@ import {
   RepeatIcon,
   RotateCcwIcon,
   Undo2Icon,
+  UserIcon,
+  UsersIcon,
   XIcon,
 } from "lucide-react";
 import { useState } from "react";
@@ -37,6 +40,35 @@ export type TodoScope =
   | { kind: "thread"; threadId: string; projectId: string | null };
 
 type View = "open" | "done" | "deleted";
+
+export type OwnerFilter = "both" | "mine" | "agent";
+const OWNER_FILTER_KEY = "fork.todoOwnerFilter";
+const OWNER_FILTER_LABEL: Record<OwnerFilter, string> = {
+  both: "Both",
+  mine: "Mine",
+  agent: "Agent's",
+};
+
+/** One click steps Both → Mine → Agent's → Both. */
+export function nextOwnerFilter(filter: OwnerFilter): OwnerFilter {
+  return filter === "both" ? "mine" : filter === "mine" ? "agent" : "both";
+}
+
+/** "Mine" keeps unassigned todos too, since choosing their owner is yours to do. */
+export function matchesOwnerFilter(todo: Pick<Todo, "owner">, filter: OwnerFilter): boolean {
+  if (filter === "both") return true;
+  if (filter === "agent") return todo.owner === "agent";
+  return todo.owner !== "agent";
+}
+
+function readOwnerFilter(): OwnerFilter {
+  try {
+    const saved = localStorage.getItem(OWNER_FILTER_KEY);
+    return saved === "mine" || saved === "agent" ? saved : "both";
+  } catch {
+    return "both";
+  }
+}
 
 const PRIORITY_RING: Record<number, string> = {
   1: "border-destructive text-destructive",
@@ -159,6 +191,16 @@ export function TodoPanel(props: {
   const { ready, error, todos, undo, redo } = useTodos();
   const [view, setView] = useState<View>("open");
   const [showAll, setShowAll] = useState(false);
+  const [ownerFilter, setOwnerFilter] = useState<OwnerFilter>(readOwnerFilter);
+  const cycleOwnerFilter = () => {
+    const next = nextOwnerFilter(ownerFilter);
+    setOwnerFilter(next);
+    try {
+      localStorage.setItem(OWNER_FILTER_KEY, next);
+    } catch {
+      // Private window: the filter just resets next time.
+    }
+  };
   const [draft, setDraft] = useState("");
   const [draftOwner, setDraftOwner] = useState<TodoOwner>("user");
   const [editing, setEditing] = useState<{ id: string; value: string } | null>(null);
@@ -173,7 +215,9 @@ export function TodoPanel(props: {
     shellList.map((shell) => [shell.id, shell]),
   );
 
-  const scoped = todos.filter((todo) => inScope(todo, scope, showAll, shells));
+  const scoped = todos.filter(
+    (todo) => inScope(todo, scope, showAll, shells) && matchesOwnerFilter(todo, ownerFilter),
+  );
   const counts = {
     open: scoped.filter((todo) => todo.status === "open").length,
     done: scoped.filter((todo) => todo.status === "done").length,
@@ -330,7 +374,23 @@ export function TodoPanel(props: {
             {name === "open" ? "Open" : name === "done" ? "Done" : "Deleted"} ({counts[name]})
           </Button>
         ))}
-        <label className="ml-auto flex items-center gap-1 text-muted-foreground">
+        <Button
+          variant={ownerFilter === "both" ? "ghost" : "secondary"}
+          size="compact"
+          className="ml-auto"
+          aria-label={`Showing ${OWNER_FILTER_LABEL[ownerFilter]} todos; click for ${OWNER_FILTER_LABEL[nextOwnerFilter(ownerFilter)]}`}
+          onClick={cycleOwnerFilter}
+        >
+          {ownerFilter === "agent" ? (
+            <BotIcon />
+          ) : ownerFilter === "mine" ? (
+            <UserIcon />
+          ) : (
+            <UsersIcon />
+          )}
+          {OWNER_FILTER_LABEL[ownerFilter]}
+        </Button>
+        <label className="flex items-center gap-1 text-muted-foreground">
           <input
             type="checkbox"
             checked={showAll}
