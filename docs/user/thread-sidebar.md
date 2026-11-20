@@ -329,3 +329,5 @@ several selected threads together. Choose **Wake thread** to bring a thread back
 A snoozed thread keeps working and stays hidden until its wake time, even while
 its agent wakes itself for background work. It comes back early only when it needs
 an approval or answer from you, when a run fails, or when you send it a message.
+
+In the personal fork, **Ctrl+Shift+Z** opens the active thread’s snooze picker outside text fields and other dialogs. Press **1–3** for the first three configured snooze presets, or **4** for a custom date and time. Click or Tab to a choice and press Enter to select it; Escape cancels. Presets come from the thread’s environment. A configured keybinding takes priority over this shortcut. Todo redo uses **Ctrl+Y**.

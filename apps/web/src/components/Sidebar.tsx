@@ -1,3 +1,4 @@
+import { ForkSnoozePicker } from "../fork/ForkSnoozePicker";
 import { liveShellEnvironmentIdsAtom } from "../state/shell";
 import { sortByChatFlag, useChatFlags } from "../fork/chatFlags";
 import { attachSidebarTree } from "../lib/sidebarTree";
@@ -2998,6 +2999,35 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
   const newThreadInProjectShortcutLabel = shortcutLabelForCommand(keybindings, "chat.newLocal");
   return (
     <>
+      <ForkSnoozePicker
+        timestampFormat={timestampFormat}
+        readTarget={() => {
+          const key = readRouteThreadKey(router);
+          const thread = key ? threadByKeyRef.current.get(key) : null;
+          return thread ? scopeThreadRef(thread.environmentId, thread.id) : null;
+        }}
+        canSnooze={(target) => {
+          const thread = readThreadShell(target);
+          return (
+            !!thread &&
+            serverConfigs.has(target.environmentId) &&
+            canOperateThreads([thread]) &&
+            canSnooze(thread, { now: new Date().toISOString() })
+          );
+        }}
+        hasBinding={(event) =>
+          resolveShortcutCommand(event, keybindings, {
+            platform: navigator.platform,
+            context: {
+              terminalFocus: isTerminalFocused(),
+              terminalOpen: routeTerminalOpen,
+              isWeb: !isElectron,
+              isDesktop: isElectron,
+            },
+          }) !== null
+        }
+        snooze={attemptSnooze}
+      />
       <ThreadContextDragGhost />
       <SidebarChromeHeader isElectron={isElectron} />
       <SidebarContent
