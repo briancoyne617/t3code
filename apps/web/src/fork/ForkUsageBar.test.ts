@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { visibleUsageRows, windowTimeLeftFraction } from "./ForkUsageBar";
+import { usageRowTags, visibleUsageRows, windowTimeLeftFraction } from "./ForkUsageBar";
 
 const window = { id: "5h", kind: "session", label: "5h", usedPercent: 10 } as const;
 const limits = (windows: ReadonlyArray<typeof window>) => ({
@@ -20,6 +20,26 @@ describe("visibleUsageRows", () => {
     const managed = { enabled: true, driver: "codex", usageLimits: limits([]) };
     const off = { enabled: false, driver: "codex", usageLimits: limits([window]) };
     expect(visibleUsageRows([managed, off] as never[])).toEqual([managed]);
+  });
+});
+
+describe("usageRowTags", () => {
+  const row = (driver: string, instanceId: string) => ({ driver, instanceId }) as never;
+
+  it("numbers rows only when a provider has more than one connection", () => {
+    const rows = [
+      row("claudeAgent", "claudeAgent"),
+      row("codex", "codex"),
+      row("claudeAgent", "claudeAgent_second"),
+    ];
+    const tags = usageRowTags(rows);
+    expect(tags.get("claudeAgent")).toBe(1);
+    expect(tags.get("claudeAgent_second")).toBe(2);
+    expect(tags.has("codex")).toBe(false);
+  });
+
+  it("adds no tags when every provider has one row", () => {
+    expect(usageRowTags([row("claudeAgent", "claudeAgent"), row("codex", "codex")]).size).toBe(0);
   });
 });
 

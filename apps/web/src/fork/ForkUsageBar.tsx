@@ -88,6 +88,19 @@ export function visibleUsageRows<T extends UsageProvider>(providers: ReadonlyArr
   );
 }
 
+/** Two connections of one provider (e.g. two Claude accounts) get a 1-based tag so their rows read apart. */
+export function usageRowTags<T extends Pick<ServerProvider, "driver" | "instanceId">>(
+  rows: ReadonlyArray<T>,
+): ReadonlyMap<string, number> {
+  const byDriver = new Map<string, T[]>();
+  for (const row of rows) byDriver.set(row.driver, [...(byDriver.get(row.driver) ?? []), row]);
+  const tags = new Map<string, number>();
+  for (const group of byDriver.values()) {
+    if (group.length > 1) group.forEach((row, index) => tags.set(row.instanceId, index + 1));
+  }
+  return tags;
+}
+
 /** Header usage per provider: logo, then % used and a reset clock for the 5-hour and weekly windows. */
 export function ForkUsageBar(props: { environmentId?: EnvironmentId }) {
   const providers =
@@ -98,6 +111,7 @@ export function ForkUsageBar(props: { environmentId?: EnvironmentId }) {
     ) ?? [];
   const now = Date.parse(`${useNowMinute()}:00Z`);
   const rows = visibleUsageRows(providers);
+  const tags = usageRowTags(rows);
   if (rows.length === 0) return null;
   return (
     <div
@@ -109,10 +123,16 @@ export function ForkUsageBar(props: { environmentId?: EnvironmentId }) {
         const name = PROVIDER_DISPLAY_NAMES[provider.driver];
         const windows = shownWindows(provider);
         const stale = provider.usageLimits?.unavailable !== undefined;
+        const tag = tags.get(provider.instanceId);
         return (
           <Tooltip key={provider.instanceId}>
             <TooltipTrigger
-              render={<div className="flex shrink-0 items-center gap-x-1" aria-label={name} />}
+              render={
+                <div
+                  className="flex shrink-0 items-center gap-x-1"
+                  aria-label={tag === undefined ? name : `${name} ${tag}`}
+                />
+              }
             >
               {Logo ? (
                 <Logo
@@ -121,6 +141,14 @@ export function ForkUsageBar(props: { environmentId?: EnvironmentId }) {
                 />
               ) : (
                 <span className="font-medium">{name}</span>
+              )}
+              {tag === undefined ? null : (
+                <span
+                  aria-hidden="true"
+                  className="text-3xs font-medium leading-none text-muted-foreground"
+                >
+                  {tag}
+                </span>
               )}
               {windows.length === 0 ? <span className="text-muted-foreground">–</span> : null}
               {windows.map((window) => {
