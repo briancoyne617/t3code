@@ -6,7 +6,7 @@ import {
   type ServerProvider,
 } from "@t3tools/contracts";
 
-import { counterpartModelSelection } from "./limitModelSwitch.ts";
+import { counterpartModelSelection, makeRetryBook } from "./limitModelSwitch.ts";
 
 const effortModel = (slug: string, optionId: string, efforts: ReadonlyArray<string>) => ({
   slug,
@@ -156,5 +156,25 @@ describe("counterpartModelSelection", () => {
       instanceId: "codex",
       model: "gpt-6-luna",
     });
+  });
+});
+
+describe("makeRetryBook", () => {
+  it("retries a refused switch a minute later until it succeeds", () => {
+    const book = makeRetryBook();
+    expect(book.nextDueMs()).toBe(Infinity);
+    expect(book.fail("t1", 1_000)).toBe(true);
+    expect(book.due(30_000)).toEqual([]);
+    expect(book.nextDueMs()).toBe(61_000);
+    expect(book.due(61_000)).toEqual(["t1"]);
+    book.clear("t1");
+    expect(book.due(999_999)).toEqual([]);
+  });
+
+  it("gives up after an hour of refusals", () => {
+    const book = makeRetryBook();
+    for (let attempt = 0; attempt < 60; attempt++) expect(book.fail("t1", attempt)).toBe(true);
+    expect(book.fail("t1", 60)).toBe(false);
+    expect(book.nextDueMs()).toBe(Infinity);
   });
 });
