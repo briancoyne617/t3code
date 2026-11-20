@@ -101,6 +101,36 @@ export function counterpartModelSelection(
   };
 }
 
+const RETRY_DELAY_MS = 60_000;
+const MAX_RETRIES = 60;
+
+/**
+ * Chats whose switch was refused (for example the old provider still had background
+ * commands running). Each one is retried a minute later, for up to an hour.
+ */
+export const makeRetryBook = <K extends string = string>() => {
+  const entries = new Map<K, { attempts: number; atMs: number }>();
+  return {
+    /** Records a refusal; returns false once the chat has used up its retries. */
+    fail: (threadId: K, nowMs: number): boolean => {
+      const attempts = (entries.get(threadId)?.attempts ?? 0) + 1;
+      if (attempts > MAX_RETRIES) {
+        entries.delete(threadId);
+        return false;
+      }
+      entries.set(threadId, { attempts, atMs: nowMs + RETRY_DELAY_MS });
+      return true;
+    },
+    clear: (threadId: K) => {
+      entries.delete(threadId);
+    },
+    /** Chats whose retry time has come. They stay booked until cleared or failed again. */
+    due: (nowMs: number): ReadonlyArray<K> =>
+      [...entries].filter(([, entry]) => entry.atMs <= nowMs).map(([threadId]) => threadId),
+    nextDueMs: (): number => Math.min(Infinity, ...[...entries.values()].map((e) => e.atMs)),
+  };
+};
+
 const affectsLimitSwitch = (event: OrchestrationV2DomainEvent) =>
   event.type.startsWith("thread.") ||
   event.type === "run.created" ||
@@ -114,6 +144,7 @@ const makeSweep = Effect.gen(function* () {
   const orchestrator = yield* Orchestrator.OrchestratorV2;
   const registry = yield* ProviderRegistry.ProviderRegistry;
   const handled = new Set<string>();
+  const retries = makeRetryBook<ThreadId>();
   // Chats touched by recent events; checked on the next sweep. Upstream's recovery query
   // drops a chat once it arms a retry, so the fork watches events instead of that query.
   const pending = new Set<ThreadId>();
@@ -146,7 +177,6 @@ const makeSweep = Effect.gen(function* () {
       return;
     const key = `${threadId}:${runId}`;
     if (handled.has(key)) return;
-    handled.add(key);
     const providers = yield* registry.getProviders;
     const current = shell.modelSelection;
     const sourceDriver =
@@ -172,6 +202,7 @@ const makeSweep = Effect.gen(function* () {
       createdBy: "user",
       creationSource: "server",
     });
+    handled.add(key);
     yield* Effect.logInfo("fork.limit-model-switch.switched", {
       threadId,
       from: current.model,
@@ -183,16 +214,19 @@ const makeSweep = Effect.gen(function* () {
     const nowMs = DateTime.toEpochMillis(yield* DateTime.now);
     if (yield* due.isIdle(nowMs)) return;
     const readVersion = yield* due.version;
-    const batch = [...pending];
+    const batch = new Set<ThreadId>([...pending, ...retries.due(nowMs)]);
     pending.clear();
     for (const threadId of batch) {
       yield* switchThread(threadId).pipe(
+        Effect.tap(() => Effect.sync(() => retries.clear(threadId))),
         Effect.catchCause((cause) =>
-          Effect.logWarning("fork.limit-model-switch.dispatch-failed", { threadId, cause }),
+          retries.fail(threadId, nowMs)
+            ? Effect.logWarning("fork.limit-model-switch.dispatch-failed", { threadId, cause })
+            : Effect.logWarning("fork.limit-model-switch.gave-up", { threadId, cause }),
         ),
       );
     }
-    yield* due.record(readVersion, Infinity, nowMs);
+    yield* due.record(readVersion, retries.nextDueMs(), nowMs);
   });
 });
 
