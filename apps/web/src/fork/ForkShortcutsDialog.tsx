@@ -30,13 +30,14 @@ import { NO_AUTOFILL } from "./noAutofill";
 import { isTypingTarget } from "./TodoList";
 
 export const FORK_SHORTCUTS = [
+  { label: "Fork: snooze active thread (1–3 presets, 4 custom)", key: "ctrl+shift+z" },
   { label: "Fork: open this shortcuts screen", key: "?" },
   { label: "Decrease composer effort", key: "alt+shift+←" },
   { label: "Increase composer effort", key: "alt+shift+→" },
   { label: "Fork: general todo list", key: "alt+g" },
   { label: "Fork: this chat's todo list (composer tab, top right)", key: "alt+j" },
   { label: "Fork: undo the last todo change (outside text fields)", key: "ctrl+z" },
-  { label: "Fork: redo a todo change", key: "ctrl+shift+z / ctrl+y" },
+  { label: "Fork: redo a todo change", key: "ctrl+y" },
   {
     label:
       "Fork: hide any part of the UI (↑/↓ bigger/smaller, Enter hides; undo in Settings → Appearance)",

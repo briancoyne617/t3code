@@ -80,6 +80,7 @@ async function importBrowserLists() {
 }
 
 function onGlobalKey(event: KeyboardEvent) {
+  if (event.ctrlKey && event.shiftKey && event.code === "KeyZ") return;
   const mod = event.ctrlKey || event.metaKey;
   if (!mod || event.altKey || (event.code !== "KeyZ" && event.code !== "KeyY")) return;
   const target = event.target;

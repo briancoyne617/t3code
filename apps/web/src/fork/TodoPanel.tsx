@@ -565,7 +565,7 @@ export function TodoPanel(props: {
       </ul>
       <p className="text-2xs text-muted-foreground">
         {props.hotkeyLabel} toggles · Enter adds · p1–p3, tomorrow, fri 3pm, every mon, @label ·
-        click text to edit · Ctrl+Z / Ctrl+Shift+Z undo/redo · ? shortcuts
+        click text to edit · Ctrl+Z / Ctrl+Y undo/redo · ? shortcuts
       </p>
     </div>
   );
