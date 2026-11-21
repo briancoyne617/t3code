@@ -1,6 +1,7 @@
 import { useAtomValue } from "@effect/atom-react";
 import { useState, type ReactNode } from "react";
 
+import { useForkFilePickerGroups } from "~/fork/useForkFilePicker";
 import { useActiveProjectTarget, type ActiveProjectTarget } from "~/hooks/useActiveProjectTarget";
 import { useTheme } from "~/hooks/useTheme";
 import { useRightPanelStore } from "~/rightPanelStore";
@@ -72,10 +73,18 @@ function OpenProjectFilePicker(props: ProjectFilePickerProps & { target: ActiveP
   const { target } = props;
   const [query, setQuery] = useState("");
   const [highlightedItemValue, setHighlightedItemValue] = useState<string | null>(null);
+  const fork = useForkFilePickerGroups({
+    target,
+    query,
+    setQuery: (value) => {
+      setHighlightedItemValue(null);
+      setQuery(value);
+    },
+  });
   const result = useProjectFilePickerQuery(
     target.environmentId,
     target.cwd,
-    query,
+    fork.pathMode ? "" : query,
     PROJECT_FILE_PICKER_RESULT_LIMIT,
   );
   const { resolvedTheme } = useTheme();
@@ -106,7 +115,9 @@ function OpenProjectFilePicker(props: ProjectFilePickerProps & { target: ActiveP
     },
   }));
 
-  const emptyStateMessage = getEmptyStateMessage(query, result.error, result.isPending);
+  const emptyStateMessage =
+    fork.emptyStateMessage ??
+    getEmptyStateMessage(query, result.error, result.isPending || fork.isPending);
 
   return (
     <CommandPaletteContent
@@ -114,7 +125,14 @@ function OpenProjectFilePicker(props: ProjectFilePickerProps & { target: ActiveP
       autoHighlight="always"
       escapeLabel="Back"
       footerActionLabel="Open file"
-      inputProps={{ placeholder: "Search files…" }}
+      inputProps={{
+        placeholder: "Search files, or type a path (~/, /)…",
+        onKeyDown: (event) => {
+          if (event.key === "Tab" && !event.shiftKey && fork.complete(highlightedItemValue)) {
+            event.preventDefault();
+          }
+        },
+      }}
       mode="none"
       onItemHighlighted={(value) => {
         setHighlightedItemValue(typeof value === "string" ? value : null);
@@ -129,14 +147,21 @@ function OpenProjectFilePicker(props: ProjectFilePickerProps & { target: ActiveP
     >
       <CommandPaletteResults
         groups={
-          items.length > 0 ? [{ value: "project-files", label: target.projectName, items }] : []
+          fork.pathMode
+            ? fork.groups
+            : [
+                ...(items.length > 0
+                  ? [{ value: "project-files", label: target.projectName, items }]
+                  : []),
+                ...fork.groups,
+              ]
         }
         highlightedItemValue={highlightedItemValue}
         isActionsOnly={false}
         keybindings={keybindings}
         onExecuteItem={(item) => {
           if (item.kind !== "action") return;
-          props.setOpen(false);
+          if (!item.keepOpen) props.setOpen(false);
           void item.run();
         }}
         emptyStateMessage={emptyStateMessage}

@@ -189,6 +189,7 @@ import {
 import { resolveLinkTarget } from "../browser/browserLinkTarget";
 import { PullRequestLinkPreview } from "./pullRequest/PullRequestLinkPreview";
 import { MarkdownCodeBlock, SuspenseShikiCodeBlock } from "./chat/MarkdownCodeBlock";
+import { codeBlockFileOpener } from "../fork/codeBlockFileOpener";
 import { createMarkdownRenderer } from "./chat/markdownRenderer";
 import { splitMarkdownBlocks } from "./chat/markdownStreamBlocks";
 import { MarkdownMermaidCodeBlock } from "./chat/MarkdownMermaidCodeBlock";
@@ -1572,6 +1573,9 @@ const CHAT_MARKDOWN_COMPONENTS = {
       onRunShellCommand,
       inline,
       mathEnabled,
+      threadRef,
+      cwd,
+      imageBaseDir,
     } = use(ChatMarkdownRendererContext);
     const text = use(ChatMarkdownTextContext);
     const codeBlock = extractCodeBlock(children);
@@ -1639,6 +1643,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
           onRunShellCommand && !isStreaming && isClosedCodeFence(node, text, codeBlock.code)
             ? onRunShellCommand
             : undefined
+        }
+        onOpenFile={
+          isStreaming && !isClosedCodeFence(node, text, codeBlock.code)
+            ? undefined
+            : codeBlockFileOpener(codeBlock.code, threadRef, cwd, imageBaseDir ?? cwd)
         }
         isStreaming={isStreaming}
       >
