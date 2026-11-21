@@ -68,9 +68,13 @@ export function latestStableTag(cwd: string): string {
   return tag;
 }
 
-/** Local clone sharing objects with the repo; skips the 250 MB of vendored read-only references. */
+/**
+ * Local clone sharing objects with the repo; skips the 250 MB of vendored read-only references.
+ * No explicit `--local`: git hardlinks objects on the same disk and copies them when releases live
+ * on another one (the VM keeps them on /srv/t3-bulk), where an explicit `--local` fails with EXDEV.
+ */
 export function makeClone(repo: string, dir: string, checkout: string): void {
-  git(repo, ["clone", "--quiet", "--local", "--no-checkout", repo, dir]);
+  git(repo, ["clone", "--quiet", "--no-checkout", repo, dir]);
   git(dir, ["config", "core.sparseCheckout", "true"]);
   git(dir, ["sparse-checkout", "set", "--no-cone", "/*", "!/.repos/"]);
   for (const key of ["user.name", "user.email"]) {

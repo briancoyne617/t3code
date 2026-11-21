@@ -1,5 +1,5 @@
 import { Check, Copy } from "lucide";
-import { PlayIcon, WrapTextIcon } from "lucide-react";
+import { PanelRightOpenIcon, PlayIcon, WrapTextIcon } from "lucide-react";
 import { toHtml } from "hast-util-to-html";
 import React, { use, useEffect, useState, type ReactNode } from "react";
 
@@ -134,6 +134,7 @@ export function MarkdownCodeBlock({
   fenceTitle,
   theme,
   onRunShellCommand,
+  onOpenFile,
   isStreaming,
   viewToggle,
   canWrap = true,
@@ -145,6 +146,8 @@ export function MarkdownCodeBlock({
   fenceTitle: string | null;
   theme: "light" | "dark";
   onRunShellCommand?: ((command: string) => void) | undefined;
+  /** Fork: the block is only a file path; open it in the Files panel. */
+  onOpenFile?: (() => void) | undefined;
   isStreaming: boolean;
   viewToggle?: ReactNode;
   canWrap?: boolean;
@@ -255,6 +258,24 @@ export function MarkdownCodeBlock({
                 <PlayIcon className="size-3" />
               </TooltipTrigger>
               <TooltipPopup side="top">Run in terminal</TooltipPopup>
+            </Tooltip>
+          ) : null}
+          {onOpenFile ? (
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="ghost-muted"
+                    size="icon-xs"
+                    onClick={onOpenFile}
+                    aria-label="Open in file editor"
+                  />
+                }
+              >
+                <PanelRightOpenIcon className="size-3" />
+              </TooltipTrigger>
+              <TooltipPopup side="top">Open in file editor</TooltipPopup>
             </Tooltip>
           ) : null}
           {viewToggle}
